@@ -1,5 +1,6 @@
 import Cocoa
 import ApplicationServices
+import os.log
 
 public final class SelectionWatcher {
     public var isEnabled = true
@@ -11,12 +12,20 @@ public final class SelectionWatcher {
     private var runLoopSource: CFRunLoopSource?
     private var mouseDidDrag = false
     private var pendingCopyWorkItem: DispatchWorkItem?
+    // 60ms: collapses rapid repeated triggers (e.g. held Shift+Arrow) into a single copy.
     private let debounceInterval: TimeInterval = 0.06
     private var copyGeneration = 0
 
     public init(exclusions: ExclusionList, ownBundleID: String = Bundle.main.bundleIdentifier ?? "com.raulpena.markit") {
         self.exclusions = exclusions
         self.ownBundleID = ownBundleID
+    }
+
+    /// Starts the event tap only if one is not already running, so it can be re-armed
+    /// after the user grants Accessibility permission without stacking duplicate taps.
+    public func startIfNeeded() {
+        guard eventTap == nil else { return }
+        start()
     }
 
     public func start() {
@@ -39,7 +48,11 @@ public final class SelectionWatcher {
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         )
 
-        guard let tap = tap else { return }
+        guard let tap = tap else {
+            // Expected on first launch: tap creation fails until Accessibility is granted.
+            os_log("MarkIt: could not create the selection event tap (Accessibility permission not yet granted?)")
+            return
+        }
         eventTap = tap
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
@@ -58,8 +71,8 @@ public final class SelectionWatcher {
         case .keyUp:
             let flags = event.flags
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-            let isArrow = (123...126).contains(keyCode)
-            let isCmdA = flags.contains(.maskCommand) && keyCode == 0
+            let isArrow = (123...126).contains(keyCode) // 123-126 = Left/Right/Down/Up arrows.
+            let isCmdA = flags.contains(.maskCommand) && keyCode == 0 // virtual key 0 = 'A'.
             if (flags.contains(.maskShift) && isArrow) || isCmdA {
                 scheduleCopy()
             }
@@ -87,6 +100,7 @@ public final class SelectionWatcher {
         let generation = copyGeneration
         let changeCountBefore = NSPasteboard.general.changeCount
         simulateCommandC()
+        // Poll for the pasteboard to catch up: 15 attempts x 20ms = ~300ms max wait.
         waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 15, generation: generation)
     }
 
@@ -106,15 +120,20 @@ public final class SelectionWatcher {
         let systemWideElement = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?
         let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
-        guard focusResult == .success, let element = focusedElement else { return true }
+        // Type-check before the cast: Swift can't conditionally downcast to a CF type, and an
+        // unguarded `as!` here would trap the whole process on an unexpected AX return value.
+        guard focusResult == .success, let focused = focusedElement,
+              CFGetTypeID(focused) == AXUIElementGetTypeID() else { return true }
+        let element = focused as! AXUIElement
         var selectedText: AnyObject?
-        let textResult = AXUIElementCopyAttributeValue(element as! AXUIElement, kAXSelectedTextAttribute as CFString, &selectedText)
+        let textResult = AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selectedText)
         guard textResult == .success, let text = selectedText as? String else { return true }
         return !text.isEmpty
     }
 
     private func simulateCommandC() {
         guard let source = CGEventSource(stateID: .hidSystemState) else { return }
+        // Virtual key 0x08 = 'C'; paired with the Command flag this is ⌘C.
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: true)
         keyDown?.flags = .maskCommand
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: false)
