@@ -12,6 +12,7 @@ public final class SelectionWatcher {
     private var mouseDidDrag = false
     private var pendingCopyWorkItem: DispatchWorkItem?
     private let debounceInterval: TimeInterval = 0.06
+    private var copyGeneration = 0
 
     public init(exclusions: ExclusionList, ownBundleID: String = Bundle.main.bundleIdentifier ?? "com.raulpena.markit") {
         self.exclusions = exclusions
@@ -82,19 +83,22 @@ public final class SelectionWatcher {
         let frontmostBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         guard SelectionGate.shouldCopy(enabled: isEnabled, frontmostBundleID: frontmostBundleID, exclusions: exclusions, ownBundleID: ownBundleID) else { return }
         guard hasNonEmptySelection() else { return }
+        copyGeneration += 1
+        let generation = copyGeneration
         let changeCountBefore = NSPasteboard.general.changeCount
         simulateCommandC()
-        waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 15)
+        waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 15, generation: generation)
     }
 
-    private func waitForPasteboardChange(from previousChangeCount: Int, attemptsRemaining: Int) {
+    private func waitForPasteboardChange(from previousChangeCount: Int, attemptsRemaining: Int, generation: Int) {
+        guard generation == copyGeneration else { return }
         if NSPasteboard.general.changeCount != previousChangeCount {
             onCopy?()
             return
         }
         guard attemptsRemaining > 0 else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
-            self?.waitForPasteboardChange(from: previousChangeCount, attemptsRemaining: attemptsRemaining - 1)
+            self?.waitForPasteboardChange(from: previousChangeCount, attemptsRemaining: attemptsRemaining - 1, generation: generation)
         }
     }
 
