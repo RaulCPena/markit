@@ -8,6 +8,7 @@ final class OnboardingWindowController {
     func showIfNeeded() {
         guard !AccessibilityPermissionManager.isTrusted else {
             window?.close()
+            window = nil
             return
         }
         guard window == nil else { return }
