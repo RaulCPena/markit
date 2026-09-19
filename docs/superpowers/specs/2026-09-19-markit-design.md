@@ -143,18 +143,26 @@ Developer-ID-signed direct download instead.
   dismisses the popup; the user then pastes normally (right-click or
   ⌘V) wherever they want it.
 - Popup also dismisses on Escape or click-outside.
-- Same list is reachable from the menu bar icon's "Clipboard History"
-  submenu, for discoverability without the hotkey.
+- The same popup is reachable from the menu bar icon's "Clipboard
+  History" item (a flat item that toggles this popup, not a separate
+  submenu), for discoverability without the hotkey.
 
 ## Menu bar menu
 
 - MarkIt icon (template image, adapts to light/dark menu bar) — visual
   state reflects enabled/disabled and Accessibility-trust status.
 - ☑︎ Auto-copy on Select (toggle)
-- Clipboard History ▸ (submenu, same items as popup, click-to-set)
+- Clipboard History (flat menu item — toggles the same floating popup
+  the ⌘⇧V hotkey opens, with the same click-to-set behavior).
+  Simplified for v1: a separate submenu mirroring the popup's contents
+  was dropped, since the popup is reachable both via the hotkey and
+  via this item, which satisfies the underlying "discoverability
+  without the hotkey" goal without a second history UI to maintain.
 - Excluded Apps… (opens a small window: list of excluded bundle IDs,
-  add via a running-app picker or manual bundle ID entry, remove via
-  swipe/delete)
+  add via a running-app picker — filtered to currently-running apps
+  with a regular activation policy — remove via swipe/delete).
+  Picker-only in v1; manual bundle ID entry is a possible future
+  addition, for excluding an app that isn't currently running.
 - ☐ Launch at Login (toggle, backed by `SMAppService.mainApp`)
 - About MarkIt
 - Quit
@@ -250,12 +258,16 @@ session with Accessibility permission granted):**
 - Build: `swift build -c release`, assembled into a `.app` bundle by
   `scripts/release.sh`, signed with a Developer ID Application
   identity already in Raul's keychain.
-- Notarization: the assembled `.app` is wrapped in a `.dmg` first (a
-  bare `.app` directory can't be submitted directly), then
-  `xcrun notarytool submit` + `xcrun stapler staple` run against that
-  `.dmg` — run manually by Raul (requires his Apple ID / team ID / an
-  app-specific password or App Store Connect API key — credentials
-  this session does not have and should not attempt to obtain).
+- Notarization: a bare `.app` directory can't be submitted directly, so
+  the signed `.app` is zipped with `ditto`, that zip is submitted with
+  `xcrun notarytool submit`, and the ticket is stapled to the `.app`
+  itself. The `.dmg` is then built from the already-stapled `.app` and
+  notarized + stapled in turn, so both the disk image and a copy the
+  user drags out of it to `/Applications` carry their own ticket and
+  pass Gatekeeper offline. Run manually by Raul (requires his Apple
+  ID / team ID / an app-specific password or App Store Connect API
+  key — credentials this session does not have and should not attempt
+  to obtain).
 - Packaging: signed `.app` wrapped in a `.dmg` (drag-to-Applications
   layout), attached to a GitHub Release.
 - No auto-update; users redownload new releases manually (see
