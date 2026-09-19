@@ -22,12 +22,13 @@ NOTARY_PROFILE="MarkItNotary"
 swift test
 
 rm -rf "$BUILD_DIR"
-mkdir -p "$APP_DIR/Contents/MacOS"
+mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 
 swift build -c release
 
 cp .build/release/MarkIt "$APP_DIR/Contents/MacOS/MarkIt"
 cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
+cp Resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
 
 # Single-binary bundle with no embedded frameworks, so --deep is unnecessary
 # (and deprecated by Apple).

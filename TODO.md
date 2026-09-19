@@ -59,7 +59,7 @@ rediscovered as surprises later.
   subsequent MarkIt interaction; the `didBecomeActive` re-arm covers the normal flow.
 
 ## Open Items (Raul to complete)
-- Step 2: Add app icon (design asset) — produce `.icns` file and add `CFBundleIconFile` to Info.plist
+- Step 2: App icon — done on `feat/app-icon` (`Resources/AppIcon.png` source, `Resources/AppIcon.icns` generated from it, `CFBundleIconFile` set, both build scripts copy it). Confirm it looks right in Finder/DMG on the next release build.
 - Step 5: Run full manual QA checklist from spec's Testing Plan
 - Step 5: Cut signed/notarized release (requires Apple Developer credentials):
   - Set MARKIT_SIGNING_IDENTITY environment variable
