@@ -21,8 +21,16 @@ final class OnboardingWindowController {
         window.title = "Welcome to MarkIt"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
+        // Clear the reference on a user-initiated close too, otherwise `showIfNeeded()` would
+        // no-op forever for a still-untrusted user who dismissed the window manually.
+        NotificationCenter.default.addObserver(self, selector: #selector(windowClosed), name: NSWindow.willCloseNotification, object: window)
         self.window = window
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func windowClosed() {
+        window = nil
+        NotificationCenter.default.removeObserver(self)
     }
 }
