@@ -1,33 +1,36 @@
 import Cocoa
 
 public final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusItem: NSStatusItem!
-    private var demoHotkey: HotkeyManager?
-    private var demoPopup: HistoryPopupController?
+    private var statusBarController: StatusBarController!
+    private var selectionWatcher: SelectionWatcher!
+    private var hotkeyManager: HotkeyManager!
+    private var historyPopup: HistoryPopupController!
+    private let exclusions = ExclusionList()
+    private let historyStore = ClipboardHistoryStore(fileURL: ClipboardHistoryStore.defaultFileURL())
 
     public override init() {
         super.init()
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MarkIt")
-        statusItem.button?.image?.isTemplate = true
+        selectionWatcher = SelectionWatcher(exclusions: exclusions)
+        selectionWatcher.onCopy = { [weak self] in
+            guard let text = NSPasteboard.general.string(forType: .string) else { return }
+            self?.historyStore.add(text: text)
+        }
+        selectionWatcher.start()
 
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        statusItem.menu = menu
+        historyPopup = HistoryPopupController(store: historyStore)
 
-        // TEMPORARY demo wiring to manually verify the hotkey + history popup
-        // end-to-end. Task 6 replaces this with the real integration.
-        let demoStore = ClipboardHistoryStore(fileURL: ClipboardHistoryStore.defaultFileURL())
-        demoStore.add(text: "First demo item")
-        demoStore.add(text: "Second demo item")
-        let demoPopup = HistoryPopupController(store: demoStore)
-        let demoHotkey = HotkeyManager()
-        demoHotkey.onTrigger = { demoPopup.toggle() }
-        _ = demoHotkey.register()
-        self.demoHotkey = demoHotkey // retain
-        self.demoPopup = demoPopup   // retain
+        hotkeyManager = HotkeyManager()
+        hotkeyManager.onTrigger = { [weak self] in self?.historyPopup.toggle() }
+        _ = hotkeyManager.register()
+
+        statusBarController = StatusBarController(
+            selectionWatcher: selectionWatcher,
+            historyPopup: historyPopup,
+            hotkeyManager: hotkeyManager,
+            exclusions: exclusions
+        )
     }
 }
