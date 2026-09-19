@@ -18,6 +18,7 @@ public final class StatusBarController {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         configureIcon()
         buildMenu()
+        updateTrustState()
     }
 
     private func configureIcon() {
@@ -75,5 +76,9 @@ public final class StatusBarController {
 
     @objc private func showAbout() {
         NSApp.orderFrontStandardAboutPanel(nil)
+    }
+
+    func updateTrustState() {
+        statusItem.button?.appearsDisabled = !AccessibilityPermissionManager.isTrusted
     }
 }

@@ -32,5 +32,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             hotkeyManager: hotkeyManager,
             exclusions: exclusions
         )
+
+        OnboardingWindowController.shared.showIfNeeded()
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            OnboardingWindowController.shared.showIfNeeded()
+            self?.statusBarController.updateTrustState()
+        }
     }
 }
