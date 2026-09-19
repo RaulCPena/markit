@@ -82,8 +82,20 @@ public final class SelectionWatcher {
         let frontmostBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         guard SelectionGate.shouldCopy(enabled: isEnabled, frontmostBundleID: frontmostBundleID, exclusions: exclusions, ownBundleID: ownBundleID) else { return }
         guard hasNonEmptySelection() else { return }
+        let changeCountBefore = NSPasteboard.general.changeCount
         simulateCommandC()
-        onCopy?()
+        waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 15)
+    }
+
+    private func waitForPasteboardChange(from previousChangeCount: Int, attemptsRemaining: Int) {
+        if NSPasteboard.general.changeCount != previousChangeCount {
+            onCopy?()
+            return
+        }
+        guard attemptsRemaining > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
+            self?.waitForPasteboardChange(from: previousChangeCount, attemptsRemaining: attemptsRemaining - 1)
+        }
     }
 
     private func hasNonEmptySelection() -> Bool {
