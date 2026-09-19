@@ -37,6 +37,10 @@ public final class StatusBarController {
         historyItem.target = self
         menu.addItem(historyItem)
 
+        let excludedItem = NSMenuItem(title: "Excluded Apps…", action: #selector(showExcludedApps), keyEquivalent: "")
+        excludedItem.target = self
+        menu.addItem(excludedItem)
+
         menu.addItem(.separator())
 
         let loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
@@ -58,6 +62,10 @@ public final class StatusBarController {
 
     @objc private func showHistory() {
         historyPopup.toggle()
+    }
+
+    @objc private func showExcludedApps() {
+        ExcludedAppsWindowController.shared.show(exclusions: exclusions)
     }
 
     @objc private func toggleLaunchAtLogin(_ sender: NSMenuItem) {
