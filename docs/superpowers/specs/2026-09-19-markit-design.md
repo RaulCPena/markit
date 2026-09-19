@@ -173,22 +173,42 @@ Developer-ID-signed direct download instead.
 
 ## Repo layout
 
+Built as a Swift Package rather than an Xcode-GUI-created `.xcodeproj`
+(a ruling made at implementation time — see the implementation plan's
+header — since project creation via Xcode's GUI wizard isn't
+scriptable by an automated build; `swift build`/`swift test` replace
+`xcodebuild`, and a shell script assembles the real `.app` bundle for
+running and distribution). This changes build tooling only; every
+component below is unchanged.
+
 ```
 markit/
-  MarkIt.xcodeproj
-  MarkIt/
-    App/                  (AppDelegate, StatusBarController)
-    Selection/            (SelectionWatcher, AX helpers)
-    Clipboard/            (ClipboardHistoryStore, ClipboardItem)
-    Exclusions/            (ExclusionList)
-    Hotkey/                (HotkeyManager)
-    UI/                    (HistoryPopupView, OnboardingView, ExcludedAppsView)
-    Info.plist
-  MarkItTests/
-    ClipboardHistoryStoreTests.swift
-    ExclusionListTests.swift
+  Package.swift
+  Sources/
+    MarkIt/                 (executable target: main.swift only)
+    MarkItCore/              (library target: everything else)
+      App/                   (AppDelegate, StatusBarController, LoginItemManager,
+                               ExcludedAppsWindowController, AccessibilityPermissionManager,
+                               OnboardingWindowController)
+      Selection/             (SelectionGate, SelectionWatcher)
+      Clipboard/             (ClipboardHistoryStore, ClipboardItem)
+      Exclusions/            (ExclusionList)
+      Hotkey/                (HotkeyManager)
+      UI/                    (HistoryPopupView, HistoryPopupController,
+                               OnboardingView, ExcludedAppsView)
+  Tests/
+    MarkItCoreTests/
+      ClipboardHistoryStoreTests.swift
+      ExclusionListTests.swift
+      SelectionGateTests.swift
+  Resources/
+    Info.plist               (template copied into the packaged .app bundle)
+  scripts/
+    build-debug-app.sh        (assembles a debug .app for manual testing)
+    release.sh                 (release build, codesign, notarize, dmg)
   docs/
     superpowers/specs/2026-09-19-markit-design.md
+    superpowers/plans/2026-09-19-markit-implementation.md
   TODO.md
   AGENTS.md
   README.md
@@ -227,11 +247,13 @@ session with Accessibility permission granted):**
 
 - Public GitHub repo under Raul's personal GitHub account, MIT
   license.
-- Build: standard `xcodebuild archive` + `xcodebuild -exportArchive`
-  using a Developer ID Application signing identity already in Raul's
-  keychain.
-- Notarization: `xcrun notarytool submit` + `xcrun stapler staple`,
-  run manually by Raul (requires his Apple ID / team ID / an
+- Build: `swift build -c release`, assembled into a `.app` bundle by
+  `scripts/release.sh`, signed with a Developer ID Application
+  identity already in Raul's keychain.
+- Notarization: the assembled `.app` is wrapped in a `.dmg` first (a
+  bare `.app` directory can't be submitted directly), then
+  `xcrun notarytool submit` + `xcrun stapler staple` run against that
+  `.dmg` — run manually by Raul (requires his Apple ID / team ID / an
   app-specific password or App Store Connect API key — credentials
   this session does not have and should not attempt to obtain).
 - Packaging: signed `.app` wrapped in a `.dmg` (drag-to-Applications
