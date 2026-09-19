@@ -25,5 +25,6 @@ final class ExcludedAppsWindowController {
 
     @objc private func windowClosed() {
         window = nil
+        NotificationCenter.default.removeObserver(self)
     }
 }
