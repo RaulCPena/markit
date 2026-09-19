@@ -18,6 +18,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         selectionWatcher.onCopy = { [weak self] in
             guard let text = NSPasteboard.general.string(forType: .string) else { return }
             self?.historyStore.add(text: text)
+            CopyFeedback.play()
         }
         selectionWatcher.start()
 
@@ -37,14 +38,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         OnboardingWindowController.shared.showIfNeeded()
-        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+        let syncTrust: (Notification) -> Void = { [weak self] _ in
             OnboardingWindowController.shared.showIfNeeded()
             self?.statusBarController.updateTrustState()
-            // Re-arm the event tap here: on first launch tapCreate fails until Accessibility
-            // is granted, and returning to MarkIt after granting is the realistic path back.
-            // (A background poll would also be needed to cover granting it with no MarkIt
-            // interaction afterwards — deliberately out of scope for v1.)
             self?.selectionWatcher.startIfNeeded()
         }
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main, using: syncTrust)
+        // Debug builds used to miss the grant until the next click; onboarding now polls and
+        // posts this when AXIsProcessTrusted() flips while System Settings is still frontmost.
+        NotificationCenter.default.addObserver(forName: .markItAccessibilityTrusted, object: nil, queue: .main, using: syncTrust)
     }
 }

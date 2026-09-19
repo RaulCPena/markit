@@ -22,7 +22,7 @@
     - `bash -n scripts/release.sh` - syntax check passed ✓
     - `plutil -p Resources/Info.plist` - version metadata verified ✓
     - `swift build` - build complete ✓
-    - `swift test` - 14 tests passed (ClipboardHistoryStore 5, ExclusionList 4, SelectionGate 5) ✓
+    - `swift test` - 16 tests passed (ClipboardHistoryStore 5, ExclusionList 4, SelectionGate 5, MenuBarIcon 1, CopyFeedback 1) ✓
 
 - **Final review fix wave (post-Task 9):** all findings from the whole-branch review applied
   - `SelectionWatcher.startIfNeeded()` + re-arm on `didBecomeActive`, so the event tap is
@@ -38,8 +38,15 @@
   - Spec updated to match the shipped flat "Clipboard History" menu item, the picker-only
     exclusion UI, and the corrected notarization order
 
+## Built (post-review polish)
+- Menu bar uses the `highlighter` SF Symbol (template), not `doc.on.clipboard`
+- About / Quit MarkIt have explicit menu targets so they work from the status item
+- Successful auto-copy plays the system `Tink` sound
+- Debug app is signed with Apple Development so Accessibility TCC can persist across rebuilds
+- Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
+
 ## In progress
-- None. All automated tasks complete.
+- None. Waiting on Raul for Accessibility re-grant (one-time after the debug signing change), manual QA, and the signed 1.0.0 release.
 
 ## Known limitations / deferred from final review
 
@@ -55,11 +62,12 @@ rediscovered as surprises later.
   boundary — a tidy-up opportunity, not a bug.
 - Escape-to-dismiss on the history popup relies on `NSPanel` defaults and should be confirmed
   in the manual QA pass rather than assumed.
-- No background poll for the case where Accessibility is granted in System Settings with no
-  subsequent MarkIt interaction; the `didBecomeActive` re-arm covers the normal flow.
+- Onboarding polls for Accessibility trust after launch so granting in Settings
+  can dismiss the sheet without a further MarkIt click.
 
 ## Open Items (Raul to complete)
-- Step 2: App icon — done on `feat/app-icon` (`Resources/AppIcon.png` source, `Resources/AppIcon.icns` generated from it, `CFBundleIconFile` set, both build scripts copy it). Confirm it looks right in Finder/DMG on the next release build.
+- One-time: remove stale ad-hoc MarkIt from System Settings → Accessibility, then add `.build/debug-app/MarkIt.app` (now Apple Development–signed).
+- Step 2: App icon is in the bundle on `main` (`Resources/AppIcon.icns`). Confirm it looks right in Finder/DMG on the next release build.
 - Step 5: Run full manual QA checklist from spec's Testing Plan
 - Step 5: Cut signed/notarized release (requires Apple Developer credentials):
   - Set MARKIT_SIGNING_IDENTITY environment variable

@@ -42,9 +42,13 @@ Current status: `TODO.md`.
   `AXIsProcessTrusted()` on launch and on every activation.
 - Signing/notarization requires Raul's Apple Developer credentials
   locally — not something an agent session can do unattended.
-- Accessibility permission is tied to the on-disk app path — grant it
-  to `.build/debug-app/MarkIt.app` (or the release build) once; a
-  clean rebuild that changes the binary can require re-granting it.
+- Accessibility permission is tied to code identity, not just the
+  display name in System Settings. `scripts/build-debug-app.sh` signs
+  the debug app with the local Apple Development cert when present so
+  rebuilds keep the same identity. If the onboarding sheet keeps
+  coming back after the toggle looks on, Settings is still bound to an
+  older ad-hoc copy — remove MarkIt from Accessibility, add
+  `.build/debug-app/MarkIt.app` again, then relaunch.
 - `SMAppService` (Launch at Login) is most reliable for an app
   installed in `/Applications` — test that feature against a release
   build, not the raw debug build sitting in the repo.

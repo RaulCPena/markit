@@ -1,6 +1,6 @@
 import Cocoa
 
-public final class StatusBarController {
+public final class StatusBarController: NSObject {
     private let statusItem: NSStatusItem
     private let selectionWatcher: SelectionWatcher
     private let historyPopup: HistoryPopupController
@@ -16,14 +16,17 @@ public final class StatusBarController {
         self.hotkeyManager = hotkeyManager
         self.exclusions = exclusions
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        super.init()
         configureIcon()
         buildMenu()
         updateTrustState()
     }
 
     private func configureIcon() {
-        statusItem.button?.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "MarkIt")
-        statusItem.button?.image?.isTemplate = true
+        guard let button = statusItem.button else { return }
+        button.image = MenuBarIcon.makeImage()
+        button.toolTip = "MarkIt"
+        button.imagePosition = .imageOnly
     }
 
     private func buildMenu() {
@@ -50,8 +53,14 @@ public final class StatusBarController {
         menu.addItem(loginItem)
 
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "About MarkIt", action: #selector(showAbout), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+
+        let aboutItem = NSMenuItem(title: "About MarkIt", action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+
+        let quitItem = NSMenuItem(title: "Quit MarkIt", action: #selector(quit), keyEquivalent: "q")
+        quitItem.target = self
+        menu.addItem(quitItem)
 
         statusItem.menu = menu
     }
@@ -75,7 +84,12 @@ public final class StatusBarController {
     }
 
     @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(nil)
+    }
+
+    @objc private func quit() {
+        NSApp.terminate(nil)
     }
 
     func updateTrustState() {
