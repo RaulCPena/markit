@@ -38,6 +38,10 @@ public final class HotkeyManager {
             UnregisterEventHotKey(ref)
             hotKeyRef = nil
         }
+        if let handler = eventHandler {
+            RemoveEventHandler(handler)
+            eventHandler = nil
+        }
         Self.registry[assignedID] = nil
     }
 }

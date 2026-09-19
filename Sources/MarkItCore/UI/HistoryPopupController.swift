@@ -14,6 +14,8 @@ public final class HistoryPopupController {
     }
 
     public func show() {
+        if panel != nil { close() }
+
         let view = HistoryPopupView(items: store.items) { [weak self] item in
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(item.text, forType: .string)
