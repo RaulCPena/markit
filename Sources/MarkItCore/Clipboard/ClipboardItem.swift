@@ -1,12 +1,12 @@
 import Foundation
 
-public struct ClipboardItem: Codable, Equatable, Identifiable {
-    public let id: UUID
-    public let text: String
-    public let timestamp: Date
-    public var isPinned: Bool
+struct ClipboardItem: Codable, Equatable, Identifiable {
+    let id: UUID
+    let text: String
+    let timestamp: Date
+    var isPinned: Bool
 
-    public init(id: UUID = UUID(), text: String, timestamp: Date = Date(), isPinned: Bool = false) {
+    init(id: UUID = UUID(), text: String, timestamp: Date = Date(), isPinned: Bool = false) {
         self.id = id
         self.text = text
         self.timestamp = timestamp
@@ -17,7 +17,7 @@ public struct ClipboardItem: Codable, Equatable, Identifiable {
         case id, text, timestamp, isPinned
     }
 
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         text = try container.decode(String.self, forKey: .text)

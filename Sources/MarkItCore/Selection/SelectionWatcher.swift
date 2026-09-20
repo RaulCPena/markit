@@ -1,11 +1,12 @@
 import Cocoa
 import ApplicationServices
 
-public final class SelectionWatcher {
-    public var isEnabled = true
-    let exclusions: ExclusionList
-    let ownBundleID: String
-    public var onCopy: (() -> Void)?
+final class SelectionWatcher {
+    /// Mirrors `AppSettings.isAutoCopyEnabled`.
+    var isAutoCopyEnabled = true
+    private let exclusions: ExclusionList
+    private let ownBundleID: String
+    var onCopy: (() -> Void)?
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -17,21 +18,16 @@ public final class SelectionWatcher {
     private var pendingAllowsCommandCFallback = false
     private var copyGeneration = 0
 
-    public init(exclusions: ExclusionList, ownBundleID: String = Bundle.main.bundleIdentifier ?? "com.raulpena.markit") {
+    init(exclusions: ExclusionList, ownBundleID: String = Bundle.main.bundleIdentifier ?? "com.raulpena.markit") {
         self.exclusions = exclusions
         self.ownBundleID = ownBundleID
     }
 
-    /// Starts the event tap only if one is not already running, so it can be re-armed
-    /// after the user grants Accessibility permission without stacking duplicate taps.
-    public func startIfNeeded() {
-        start()
-    }
-
-    public func start() {
+    /// Installs monitors/tap if missing, then re-arms after Accessibility is granted.
+    func start() {
         installMonitorsIfNeeded()
         installTapIfNeeded()
-        MarkItLog.line("start trusted=\(AccessibilityPermissionManager.isTrusted) tap=\(eventTap != nil) monitor=\(globalMonitor != nil) enabled=\(isEnabled)")
+        MarkItLog.line("start trusted=\(AccessibilityPermissionManager.isTrusted) tap=\(eventTap != nil) monitor=\(globalMonitor != nil) enabled=\(isAutoCopyEnabled)")
     }
 
     private func installMonitorsIfNeeded() {
@@ -203,7 +199,7 @@ public final class SelectionWatcher {
         }
         let frontmostBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         let gateAllows = SelectionGate.shouldCopy(
-            enabled: isEnabled,
+            enabled: isAutoCopyEnabled,
             frontmostBundleID: frontmostBundleID,
             exclusions: exclusions,
             ownBundleID: ownBundleID
@@ -215,26 +211,20 @@ public final class SelectionWatcher {
             allowCommandCFallback: pendingAllowsCommandCFallback
         ) {
         case .none:
-            MarkItLog.line("skipped copy enabled=\(isEnabled) frontmost=\(frontmostBundleID ?? "nil")")
+            MarkItLog.line("skipped copy enabled=\(isAutoCopyEnabled) frontmost=\(frontmostBundleID ?? "nil")")
         case .writeToPasteboard(let text):
             MarkItLog.line("write \(text.count) chars from AX")
-            writeToPasteboard(text)
+            PasteboardActions.putText(text)
             onCopy?()
         case .simulateCommandC:
             MarkItLog.line("fallback ⌘C frontmost=\(frontmostBundleID ?? "nil")")
             copyGeneration += 1
             let generation = copyGeneration
             let changeCountBefore = NSPasteboard.general.changeCount
-            simulateCommandC()
+            PasteboardActions.copyToFrontmostApp()
             // Poll for the pasteboard to catch up: 25 attempts x 20ms = ~500ms max wait.
             waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 25, generation: generation)
         }
-    }
-
-    private func writeToPasteboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
     }
 
     private func waitForPasteboardChange(from previousChangeCount: Int, attemptsRemaining: Int, generation: Int) {
@@ -259,28 +249,10 @@ public final class SelectionWatcher {
         let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
         guard focusResult == .success, let focused = focusedElement,
               CFGetTypeID(focused) == AXUIElementGetTypeID() else { return nil }
-        let element = focused as! AXUIElement
+        let element = unsafeBitCast(focused, to: AXUIElement.self)
         var selectedText: AnyObject?
         let textResult = AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selectedText)
         guard textResult == .success else { return nil }
         return selectedText as? String
-    }
-
-    private func simulateCommandC() {
-        guard let source = CGEventSource(stateID: .hidSystemState) else { return }
-        source.localEventsSuppressionInterval = 0
-        // 0x37 = Command, 0x08 = C. Post a full key chord at the HID tap so the
-        // frontmost app sees it as a real copy, not a flag-only C key.
-        let commandDown = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: true)
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: true)
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: false)
-        let commandUp = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: false)
-        keyDown?.flags = .maskCommand
-        keyUp?.flags = .maskCommand
-        let tap = CGEventTapLocation.cghidEventTap
-        commandDown?.post(tap: tap)
-        keyDown?.post(tap: tap)
-        keyUp?.post(tap: tap)
-        commandUp?.post(tap: tap)
     }
 }

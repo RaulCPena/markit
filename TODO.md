@@ -46,23 +46,22 @@
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-20 — Working mode: Raul = PM, agent = Swift. README rewritten in a plainer voice. PDF user guide deferred.
+2026-09-20 — Code cleanliness pass from review: demote public surface, shared AppSettings, pasteboard helpers, sound log fixed.
 
 ## Now
-- Uncommitted: README/docs voice, sound Off + system picker, whoosh removed, CI/linguist. Waiting on Raul for next product call (commit, code cleanup pass, or a feature).
+- Cleanliness changes uncommitted on MarkIt. bigbeardapps `feat/markit-profile` still unfinished (leftover hunting copy in /markit pages).
 
 ## Next
-- Code cleanliness pass (PM-driven: what to touch first)
-- Maccy-parity Free: ⌘1–9, paste plain, delete item, pause, remappable hotkey, history toward 999
-- PDF user guide (after the Markdown settles)
-- Ship: Developer ID dmg on bigbeardapps.com/markit + GitHub. Not Mac App Store.
+- Finish bigbeardapps /markit profile (MarkIt pages only); commit branch, do not push
+- Maccy-parity Free features when PM picks one
+- PDF user guide later
 - When live: launch playbook (bigbeardapps + raulcpena deploy on push)
 
 ## Blocked
 - None
 
 ## In progress
-- Sound: Off by default or a native system sound; custom whoosh on hold until Raul finds one.
+- Sound: Off by default or system sound; custom whoosh on hold.
 
 ## Known limitations / deferred from final review
 
@@ -70,9 +69,6 @@ Known, deliberately deferred, not blocking the v1 branch. Recorded so they aren'
 rediscovered as surprises later.
 
 - Images / iCloud / remappable hotkey still out of scope.
-- `StatusBarController.hotkeyManager` is stored but never used.
-- Several `MarkItCore` types are `public` when only `AppDelegate` needs to cross the module
-  boundary — a tidy-up opportunity, not a bug.
 - Escape-to-dismiss on the history popup relies on `NSPanel` defaults and should be confirmed
   in the manual QA pass rather than assumed.
 - Onboarding polls for Accessibility trust after launch so granting in Settings

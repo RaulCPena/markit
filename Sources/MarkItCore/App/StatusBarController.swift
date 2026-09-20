@@ -1,25 +1,27 @@
 import Cocoa
 
-public final class StatusBarController: NSObject {
+final class StatusBarController: NSObject {
     private let statusItem: NSStatusItem
     private let selectionWatcher: SelectionWatcher
     private let historyPopup: HistoryPopupController
-    private let hotkeyManager: HotkeyManager
-    let exclusions: ExclusionList
+    private let exclusions: ExclusionList
     private let settings: AppSettings
 
-    public init(selectionWatcher: SelectionWatcher, historyPopup: HistoryPopupController, hotkeyManager: HotkeyManager, exclusions: ExclusionList, settings: AppSettings = AppSettings()) {
+    init(
+        selectionWatcher: SelectionWatcher,
+        historyPopup: HistoryPopupController,
+        exclusions: ExclusionList,
+        settings: AppSettings
+    ) {
         self.selectionWatcher = selectionWatcher
         self.historyPopup = historyPopup
-        self.hotkeyManager = hotkeyManager
         self.exclusions = exclusions
         self.settings = settings
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
-        selectionWatcher.isEnabled = settings.isAutoCopyEnabled
+        selectionWatcher.isAutoCopyEnabled = settings.isAutoCopyEnabled
         configureIcon()
         buildMenu()
-        updateTrustState()
     }
 
     private func configureIcon() {
@@ -100,7 +102,7 @@ public final class StatusBarController: NSObject {
 
     @objc private func toggleAutoCopy(_ sender: NSMenuItem) {
         settings.isAutoCopyEnabled.toggle()
-        selectionWatcher.isEnabled = settings.isAutoCopyEnabled
+        selectionWatcher.isAutoCopyEnabled = settings.isAutoCopyEnabled
         sender.state = settings.isAutoCopyEnabled ? .on : .off
     }
 
@@ -122,7 +124,7 @@ public final class StatusBarController: NSObject {
     }
 
     @objc private func clearHistory() {
-        historyPopup.store.clear()
+        historyPopup.clearHistory()
     }
 
     @objc private func showExcludedApps() {
@@ -144,7 +146,7 @@ public final class StatusBarController: NSObject {
     }
 
     @objc private func openAccessibilitySettings() {
-        AccessibilityPermissionManager.requestPermission()
+        AccessibilityPermissionManager.openAccessibilitySettings()
     }
 
     @objc private func revealAppInFinder() {
@@ -152,7 +154,6 @@ public final class StatusBarController: NSObject {
     }
 
     func updateTrustState() {
-        statusItem.button?.appearsDisabled = false
         buildMenu()
     }
 }

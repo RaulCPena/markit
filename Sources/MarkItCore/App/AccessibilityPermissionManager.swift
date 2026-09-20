@@ -12,13 +12,9 @@ enum AccessibilityPermissionManager {
         AXIsProcessTrusted()
     }
 
-    static func requestPermission() {
-        // Do not use kAXTrustedCheckOptionPrompt. That lock dialog appears even
-        // when a stale MarkIt row is already On in Settings, and it never binds
-        // this process. Send the user to the list so they can remove/re-add.
-        openAccessibilitySettings()
-    }
-
+    /// Opens System Settings to Accessibility. Does not use `kAXTrustedCheckOptionPrompt`
+    /// — that lock dialog can appear even when a stale MarkIt row is already On, and it
+    /// never binds this process. The user must remove/re-add the correct binary.
     static func openAccessibilitySettings() {
         for string in settingsURLStrings {
             guard let url = URL(string: string) else { continue }

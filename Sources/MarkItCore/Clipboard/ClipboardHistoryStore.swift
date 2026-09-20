@@ -1,19 +1,19 @@
 import Foundation
 
-public final class ClipboardHistoryStore {
-    public private(set) var items: [ClipboardItem] = []
+final class ClipboardHistoryStore {
+    private(set) var items: [ClipboardItem] = []
     private let maxItems: Int
     private let dedupeWindow: Int
     private let fileURL: URL
 
-    public init(maxItems: Int = 200, dedupeWindow: Int = 10, fileURL: URL) {
+    init(maxItems: Int = 200, dedupeWindow: Int = 10, fileURL: URL) {
         self.maxItems = maxItems
         self.dedupeWindow = dedupeWindow
         self.fileURL = fileURL
         load()
     }
 
-    public func add(text: String) {
+    func add(text: String) {
         guard !text.isEmpty else { return }
         let recent = items.prefix(dedupeWindow)
         if recent.contains(where: { $0.text == text }) { return }
@@ -22,18 +22,18 @@ public final class ClipboardHistoryStore {
         save()
     }
 
-    public func togglePin(id: UUID) {
+    func togglePin(id: UUID) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].isPinned.toggle()
         save()
     }
 
-    public func clear() {
+    func clear() {
         items = []
         save()
     }
 
-    public func displayed(matching query: String) -> [ClipboardItem] {
+    func displayed(matching query: String) -> [ClipboardItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let filtered: [ClipboardItem]
         if trimmed.isEmpty {
@@ -44,7 +44,7 @@ public final class ClipboardHistoryStore {
         return filtered.filter(\.isPinned) + filtered.filter { !$0.isPinned }
     }
 
-    public func load() {
+    private func load() {
         guard let data = try? Data(contentsOf: fileURL),
               let decoded = try? JSONDecoder().decode([ClipboardItem].self, from: data) else {
             items = []
@@ -53,7 +53,7 @@ public final class ClipboardHistoryStore {
         items = decoded
     }
 
-    public func save() {
+    private func save() {
         guard let data = try? JSONEncoder().encode(items) else { return }
         try? data.write(to: fileURL, options: .atomic)
     }
@@ -64,10 +64,8 @@ public final class ClipboardHistoryStore {
             items.remove(at: index)
         }
     }
-}
 
-extension ClipboardHistoryStore {
-    public static func defaultFileURL() -> URL {
+    static func defaultFileURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let dir = appSupport.appendingPathComponent("MarkIt", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

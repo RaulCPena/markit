@@ -8,21 +8,20 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var historyPopup: HistoryPopupController!
     private let exclusions = ExclusionList()
     private let historyStore = ClipboardHistoryStore(fileURL: ClipboardHistoryStore.defaultFileURL())
-
-    public override init() {
-        super.init()
-    }
+    private let settings = AppSettings()
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         selectionWatcher = SelectionWatcher(exclusions: exclusions)
-        selectionWatcher.isEnabled = AppSettings().isAutoCopyEnabled
+        selectionWatcher.isAutoCopyEnabled = settings.isAutoCopyEnabled
         selectionWatcher.onCopy = { [weak self] in
+            guard let self else { return }
             guard !PasteboardPrivacy.isConcealed(types: NSPasteboard.general.types) else { return }
             guard let text = NSPasteboard.general.string(forType: .string) else { return }
-            self?.historyStore.add(text: text)
-            CopyFeedback.play()
+            self.historyStore.add(text: text)
+            CopyFeedback.play(settings: self.settings)
             CopyToastController.shared.show(text: text)
-            MarkItLog.line("copied \(text.count) chars, played sound")
+            let soundNote = self.settings.isCopySoundEnabled ? ", sound on" : ""
+            MarkItLog.line("copied \(text.count) chars\(soundNote)")
         }
         selectionWatcher.start()
 
@@ -37,15 +36,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBarController = StatusBarController(
             selectionWatcher: selectionWatcher,
             historyPopup: historyPopup,
-            hotkeyManager: hotkeyManager,
-            exclusions: exclusions
+            exclusions: exclusions,
+            settings: settings
         )
 
         OnboardingWindowController.shared.showIfNeeded()
         let syncTrust: (Notification) -> Void = { [weak self] _ in
             OnboardingWindowController.shared.showIfNeeded()
             self?.statusBarController.updateTrustState()
-            self?.selectionWatcher.startIfNeeded()
+            self?.selectionWatcher.start()
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main, using: syncTrust)
         // Debug builds used to miss the grant until the next click; onboarding now polls and

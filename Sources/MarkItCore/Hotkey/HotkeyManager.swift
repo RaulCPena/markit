@@ -1,8 +1,8 @@
 import Carbon
 import Cocoa
 
-public final class HotkeyManager {
-    public var onTrigger: (() -> Void)?
+final class HotkeyManager {
+    var onTrigger: (() -> Void)?
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
@@ -10,9 +10,9 @@ public final class HotkeyManager {
     private static var nextID: UInt32 = 1
     private var assignedID: UInt32 = 0
 
-    public init() {}
+    func register(keyCode: UInt32 = UInt32(kVK_ANSI_V), modifiers: UInt32 = UInt32(cmdKey | shiftKey)) -> Bool {
+        unregister()
 
-    public func register(keyCode: UInt32 = UInt32(kVK_ANSI_V), modifiers: UInt32 = UInt32(cmdKey | shiftKey)) -> Bool {
         assignedID = Self.nextID
         Self.nextID += 1
         Self.registry[assignedID] = self
@@ -33,7 +33,7 @@ public final class HotkeyManager {
         return status == noErr
     }
 
-    public func unregister() {
+    func unregister() {
         if let ref = hotKeyRef {
             UnregisterEventHotKey(ref)
             hotKeyRef = nil
@@ -42,6 +42,9 @@ public final class HotkeyManager {
             RemoveEventHandler(handler)
             eventHandler = nil
         }
-        Self.registry[assignedID] = nil
+        if assignedID != 0 {
+            Self.registry[assignedID] = nil
+            assignedID = 0
+        }
     }
 }

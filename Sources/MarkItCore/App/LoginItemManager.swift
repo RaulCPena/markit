@@ -1,12 +1,12 @@
 import ServiceManagement
 import os.log
 
-public enum LoginItemManager {
-    public static var isEnabled: Bool {
+enum LoginItemManager {
+    static var isEnabled: Bool {
         SMAppService.mainApp.status == .enabled
     }
 
-    public static func setEnabled(_ enabled: Bool) {
+    static func setEnabled(_ enabled: Bool) {
         do {
             if enabled {
                 try SMAppService.mainApp.register()

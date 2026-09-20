@@ -1,6 +1,6 @@
 import Foundation
 
-public final class AppSettings {
+final class AppSettings {
     private let defaults: UserDefaults
     private let autoCopyKey = "isAutoCopyEnabled"
     private let soundKey = "isCopySoundEnabled"
@@ -8,7 +8,7 @@ public final class AppSettings {
 
     static let systemSoundNames = ["Purr", "Pop", "Blow", "Tink", "Glass", "Funk"]
 
-    public init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 

@@ -1,7 +1,7 @@
 import Foundation
 
-public final class ExclusionList {
-    public static let defaultPasswordManagers: [String] = [
+final class ExclusionList {
+    static let defaultPasswordManagers: [String] = [
         "com.1password.1password",
         "com.agilebits.onepassword7",
         "com.apple.keychainaccess",
@@ -15,26 +15,26 @@ public final class ExclusionList {
     private let key = "excludedBundleIDs"
     private let seededKey = "didSeedDefaultExclusions"
 
-    public init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         seedDefaultsIfNeeded()
     }
 
-    public var bundleIDs: Set<String> {
+    var bundleIDs: Set<String> {
         Set(defaults.stringArray(forKey: key) ?? [])
     }
 
-    public func contains(_ bundleID: String) -> Bool {
+    func contains(_ bundleID: String) -> Bool {
         bundleIDs.contains(bundleID)
     }
 
-    public func add(_ bundleID: String) {
+    func add(_ bundleID: String) {
         var current = bundleIDs
         current.insert(bundleID)
         defaults.set(Array(current), forKey: key)
     }
 
-    public func remove(_ bundleID: String) {
+    func remove(_ bundleID: String) {
         var current = bundleIDs
         current.remove(bundleID)
         defaults.set(Array(current), forKey: key)

@@ -1,21 +1,21 @@
 import Cocoa
 import SwiftUI
 
-public final class HistoryPopupController: NSObject {
-    let store: ClipboardHistoryStore
+final class HistoryPopupController: NSObject {
+    private let store: ClipboardHistoryStore
     private var panel: NSPanel?
     private var model: HistoryPopupModel?
 
-    public init(store: ClipboardHistoryStore) {
+    init(store: ClipboardHistoryStore) {
         self.store = store
         super.init()
     }
 
-    public func toggle() {
+    func toggle() {
         if panel != nil { close() } else { show() }
     }
 
-    public func show() {
+    func show() {
         if panel != nil { close() }
 
         let model = HistoryPopupModel(store: store)
@@ -50,11 +50,15 @@ public final class HistoryPopupController: NSObject {
         close()
     }
 
-    public func close() {
+    func close() {
         panel?.close()
         panel = nil
         model = nil
         NotificationCenter.default.removeObserver(self)
+    }
+
+    func clearHistory() {
+        store.clear()
     }
 
     private func paste(_ item: ClipboardItem) {

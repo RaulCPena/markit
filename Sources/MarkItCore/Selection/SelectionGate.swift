@@ -1,6 +1,6 @@
 import Foundation
 
-public enum SelectionGate {
+enum SelectionGate {
     static let implicitlyExcludedBundleIDs: Set<String> = [
         "com.apple.dock",
         "com.apple.systemuiserver",
@@ -8,7 +8,7 @@ public enum SelectionGate {
         "com.apple.finder"
     ]
 
-    public static func shouldCopy(
+    static func shouldCopy(
         enabled: Bool,
         frontmostBundleID: String?,
         exclusions: ExclusionList,
