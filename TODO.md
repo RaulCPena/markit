@@ -46,16 +46,16 @@
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-20 — Code cleanliness pass from review: demote public surface, shared AppSettings, pasteboard helpers, sound log fixed.
+2026-09-20 — Cleanliness pass pushed (`8718b7e`). Site profile still local on bigbeardapps `feat/markit-profile`.
 
 ## Now
-- Cleanliness changes uncommitted on MarkIt. bigbeardapps `feat/markit-profile` still unfinished (leftover hunting copy in /markit pages).
+- Waiting on Raul: finish bigbeardapps `/markit` (scrub leftover hunting copy, sync/audit, commit, no push).
 
 ## Next
 - Finish bigbeardapps /markit profile (MarkIt pages only); commit branch, do not push
+- Optional: raulcpena.com MarkIt project card (also no push until asked)
 - Maccy-parity Free features when PM picks one
 - PDF user guide later
-- When live: launch playbook (bigbeardapps + raulcpena deploy on push)
 
 ## Blocked
 - None
