@@ -14,10 +14,9 @@ Current status: `TODO.md`.
   project — Xcode opens `Package.swift` directly, or use the CLI:
   `swift build`
 - Unit tests: `swift test` (or `swift test --filter <TestClassName>`)
-- Run the app: `./scripts/build-debug-app.sh && open .build/debug-app/MarkIt.app`
-  (a raw `swift run` binary has no Info.plist / bundle identity, so
-  `LSUIElement`, Accessibility permission, and login-item registration
-  won't behave correctly without going through this script)
+- Run the app: `./scripts/build-debug-app.sh && open /Applications/MarkIt.app`
+  (the script also leaves a copy at `.build/debug-app/MarkIt.app`; grant
+  Accessibility to **`/Applications/MarkIt.app`**, not a leftover `.build` copy)
 - Unit tests cover `ClipboardHistoryStore`, `ExclusionList`, and
   `SelectionGate` (the pure copy-decision logic) only —
   `SelectionWatcher`/`HotkeyManager`'s live `CGEventTap`/Accessibility

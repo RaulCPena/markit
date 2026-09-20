@@ -41,23 +41,33 @@
 ## Built (post-review polish)
 - Menu bar uses the `highlighter` SF Symbol (template), not `doc.on.clipboard`
 - About / Quit MarkIt have explicit menu targets so they work from the status item
-- Successful auto-copy plays the system `Tink` sound
+- Successful auto-copy plays **Purr** (not Tink) and a brief on-screen “Copied” toast
 - Debug app is signed with Apple Development so Accessibility TCC can persist across rebuilds
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
+## Last updated
+2026-09-19 (evening) — 33 tests passed; debug MarkIt installed at `/Applications/MarkIt.app`.
+
+## Now
+- Manual check: Finder clicks/file opens should not copy; drag-select text should.
+
+## Next
+- If Accessibility flaps after this rebuild, grant `/Applications/MarkIt.app` again
+- Manual QA; signed 1.0.0 when ready
+
+## Blocked
+- None
+
 ## In progress
-- None. Waiting on Raul for Accessibility re-grant (one-time after the debug signing change), manual QA, and the signed 1.0.0 release.
+- v1.1 + false-positive click copies. Keep select-to-copy.
 
 ## Known limitations / deferred from final review
 
 Known, deliberately deferred, not blocking the v1 branch. Recorded so they aren't
 rediscovered as surprises later.
 
-- No "Clear History" action in the menu — `history.json` is plaintext and there is currently
-  no way to clear it from the UI.
+- Images / iCloud / remappable hotkey still out of scope.
 - `StatusBarController.hotkeyManager` is stored but never used.
-- The status bar icon reflects Accessibility trust state only, not the auto-copy-off state.
-- `isAutoCopyEnabled` is in-memory only; it resets to on across relaunches.
 - Several `MarkItCore` types are `public` when only `AppDelegate` needs to cross the module
   boundary — a tidy-up opportunity, not a bug.
 - Escape-to-dismiss on the history popup relies on `NSPanel` defaults and should be confirmed

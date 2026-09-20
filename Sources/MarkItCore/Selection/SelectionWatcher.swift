@@ -1,6 +1,5 @@
 import Cocoa
 import ApplicationServices
-import os.log
 
 public final class SelectionWatcher {
     public var isEnabled = true
@@ -10,7 +9,10 @@ public final class SelectionWatcher {
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private var mouseDidDrag = false
+    private var globalMonitor: Any?
+    private var dragStart: CGPoint?
+    private var dragDistance: CGFloat = 0
+    private var mouseClickCount = 1
     private var pendingCopyWorkItem: DispatchWorkItem?
     // 60ms: collapses rapid repeated triggers (e.g. held Shift+Arrow) into a single copy.
     private let debounceInterval: TimeInterval = 0.06
@@ -24,50 +26,101 @@ public final class SelectionWatcher {
     /// Starts the event tap only if one is not already running, so it can be re-armed
     /// after the user grants Accessibility permission without stacking duplicate taps.
     public func startIfNeeded() {
-        guard eventTap == nil else { return }
         start()
     }
 
     public func start() {
+        installMonitorsIfNeeded()
+        installTapIfNeeded()
+        MarkItLog.line("start trusted=\(AccessibilityPermissionManager.isTrusted) tap=\(eventTap != nil) monitor=\(globalMonitor != nil) enabled=\(isEnabled)")
+    }
+
+    private func installMonitorsIfNeeded() {
+        guard globalMonitor == nil else { return }
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .keyUp]) { [weak self] event in
+            DispatchQueue.main.async {
+                self?.handleNSEvent(event)
+            }
+        }
+        if globalMonitor == nil {
+            MarkItLog.line("NSEvent global monitor was not installed")
+        }
+    }
+
+    private func installTapIfNeeded() {
+        guard eventTap == nil else { return }
         let mask: CGEventMask = (1 << CGEventType.leftMouseDown.rawValue)
             | (1 << CGEventType.leftMouseDragged.rawValue)
             | (1 << CGEventType.leftMouseUp.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
 
+        let callback: CGEventTapCallBack = { _, type, event, refcon in
+            guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
+            let watcher = Unmanaged<SelectionWatcher>.fromOpaque(refcon).takeUnretainedValue()
+            watcher.handle(type: type, event: event)
+            return Unmanaged.passUnretained(event)
+        }
+        let userInfo = Unmanaged.passUnretained(self).toOpaque()
+        // HID first: session listen-only taps often never see other-apps' mouse drags.
         let tap = CGEvent.tapCreate(
+            tap: .cghidEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: mask,
+            callback: callback,
+            userInfo: userInfo
+        ) ?? CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
-            options: .listenOnly,
+            options: .defaultTap,
             eventsOfInterest: mask,
-            callback: { _, type, event, refcon in
-                guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
-                let watcher = Unmanaged<SelectionWatcher>.fromOpaque(refcon).takeUnretainedValue()
-                watcher.handle(type: type, event: event)
-                return Unmanaged.passUnretained(event)
-            },
-            userInfo: Unmanaged.passUnretained(self).toOpaque()
+            callback: callback,
+            userInfo: userInfo
         )
 
         guard let tap = tap else {
-            // Expected on first launch: tap creation fails until Accessibility is granted.
-            os_log("MarkIt: could not create the selection event tap (Accessibility permission not yet granted?)")
+            MarkItLog.line("could not create CGEventTap")
             return
         }
         eventTap = tap
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
+        MarkItLog.line("CGEventTap is running")
+    }
+
+    private func handleNSEvent(_ event: NSEvent) {
+        switch event.type {
+        case .leftMouseDown:
+            beginDrag(clickCount: event.clickCount)
+        case .leftMouseDragged:
+            updateDrag()
+        case .leftMouseUp:
+            finishDrag(clickCount: event.clickCount)
+        case .keyUp:
+            let flags = event.modifierFlags
+            let keyCode = event.keyCode
+            let isArrow = (123...126).contains(keyCode)
+            let isCmdA = flags.contains(.command) && keyCode == 0
+            if (flags.contains(.shift) && isArrow) || isCmdA {
+                scheduleCopy()
+            }
+        default:
+            break
+        }
     }
 
     private func handle(type: CGEventType, event: CGEvent) {
         switch type {
         case .leftMouseDown:
-            mouseDidDrag = false
+            if globalMonitor != nil { return }
+            beginDrag(clickCount: Int(event.getIntegerValueField(.mouseEventClickState)))
         case .leftMouseDragged:
-            mouseDidDrag = true
+            if globalMonitor != nil { return }
+            updateDrag()
         case .leftMouseUp:
-            if mouseDidDrag { scheduleCopy() }
-            mouseDidDrag = false
+            if globalMonitor != nil { return }
+            finishDrag(clickCount: Int(event.getIntegerValueField(.mouseEventClickState)))
         case .keyUp:
             let flags = event.flags
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
@@ -85,7 +138,32 @@ public final class SelectionWatcher {
         }
     }
 
+    private func beginDrag(clickCount: Int) {
+        dragStart = NSEvent.mouseLocation
+        dragDistance = 0
+        mouseClickCount = max(clickCount, 1)
+    }
+
+    private func updateDrag() {
+        guard let start = dragStart else { return }
+        dragDistance = max(dragDistance, SelectionDragIntent.distance(from: start, to: NSEvent.mouseLocation))
+    }
+
+    private func finishDrag(clickCount: Int) {
+        updateDrag()
+        let clicks = max(mouseClickCount, max(clickCount, 1))
+        if SelectionDragIntent.isTextDrag(distance: dragDistance, clickCount: clicks) {
+            scheduleCopy()
+        } else {
+            MarkItLog.line("skip click clicks=\(clicks) dist=\(Int(dragDistance))")
+        }
+        dragStart = nil
+        dragDistance = 0
+        mouseClickCount = 1
+    }
+
     private func scheduleCopy() {
+        MarkItLog.line("selection gesture")
         pendingCopyWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in self?.performCopyIfAllowed() }
         pendingCopyWorkItem = workItem
@@ -93,15 +171,39 @@ public final class SelectionWatcher {
     }
 
     private func performCopyIfAllowed() {
+        guard AccessibilityPermissionManager.isTrusted else {
+            MarkItLog.line("skip copy: process is not trusted")
+            return
+        }
         let frontmostBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        guard SelectionGate.shouldCopy(enabled: isEnabled, frontmostBundleID: frontmostBundleID, exclusions: exclusions, ownBundleID: ownBundleID) else { return }
-        guard hasNonEmptySelection() else { return }
-        copyGeneration += 1
-        let generation = copyGeneration
-        let changeCountBefore = NSPasteboard.general.changeCount
-        simulateCommandC()
-        // Poll for the pasteboard to catch up: 15 attempts x 20ms = ~300ms max wait.
-        waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 15, generation: generation)
+        let gateAllows = SelectionGate.shouldCopy(
+            enabled: isEnabled,
+            frontmostBundleID: frontmostBundleID,
+            exclusions: exclusions,
+            ownBundleID: ownBundleID
+        )
+        switch CopyPlanner.action(gateAllows: gateAllows, axSelectedText: axSelectedText()) {
+        case .none:
+            MarkItLog.line("skipped copy enabled=\(isEnabled) frontmost=\(frontmostBundleID ?? "nil")")
+        case .writeToPasteboard(let text):
+            MarkItLog.line("write \(text.count) chars from AX")
+            writeToPasteboard(text)
+            onCopy?()
+        case .simulateCommandC:
+            MarkItLog.line("fallback ⌘C frontmost=\(frontmostBundleID ?? "nil")")
+            copyGeneration += 1
+            let generation = copyGeneration
+            let changeCountBefore = NSPasteboard.general.changeCount
+            simulateCommandC()
+            // Poll for the pasteboard to catch up: 25 attempts x 20ms = ~500ms max wait.
+            waitForPasteboardChange(from: changeCountBefore, attemptsRemaining: 25, generation: generation)
+        }
+    }
+
+    private func writeToPasteboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
     }
 
     private func waitForPasteboardChange(from previousChangeCount: Int, attemptsRemaining: Int, generation: Int) {
@@ -110,35 +212,44 @@ public final class SelectionWatcher {
             onCopy?()
             return
         }
-        guard attemptsRemaining > 0 else { return }
+        guard attemptsRemaining > 0 else {
+            MarkItLog.line("simulated ⌘C did not change the pasteboard")
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) { [weak self] in
             self?.waitForPasteboardChange(from: previousChangeCount, attemptsRemaining: attemptsRemaining - 1, generation: generation)
         }
     }
 
-    private func hasNonEmptySelection() -> Bool {
+    /// `nil` means AX didn't expose a string (caller falls back to ⌘C).
+    private func axSelectedText() -> String? {
         let systemWideElement = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?
         let focusResult = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
-        // Type-check before the cast: Swift can't conditionally downcast to a CF type, and an
-        // unguarded `as!` here would trap the whole process on an unexpected AX return value.
         guard focusResult == .success, let focused = focusedElement,
-              CFGetTypeID(focused) == AXUIElementGetTypeID() else { return true }
+              CFGetTypeID(focused) == AXUIElementGetTypeID() else { return nil }
         let element = focused as! AXUIElement
         var selectedText: AnyObject?
         let textResult = AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selectedText)
-        guard textResult == .success, let text = selectedText as? String else { return true }
-        return !text.isEmpty
+        guard textResult == .success else { return nil }
+        return selectedText as? String
     }
 
     private func simulateCommandC() {
         guard let source = CGEventSource(stateID: .hidSystemState) else { return }
-        // Virtual key 0x08 = 'C'; paired with the Command flag this is ⌘C.
+        source.localEventsSuppressionInterval = 0
+        // 0x37 = Command, 0x08 = C. Post a full key chord at the HID tap so the
+        // frontmost app sees it as a real copy, not a flag-only C key.
+        let commandDown = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: true)
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: true)
-        keyDown?.flags = .maskCommand
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x08, keyDown: false)
+        let commandUp = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: false)
+        keyDown?.flags = .maskCommand
         keyUp?.flags = .maskCommand
-        keyDown?.post(tap: .cgSessionEventTap)
-        keyUp?.post(tap: .cgSessionEventTap)
+        let tap = CGEventTapLocation.cghidEventTap
+        commandDown?.post(tap: tap)
+        keyDown?.post(tap: tap)
+        keyUp?.post(tap: tap)
+        commandUp?.post(tap: tap)
     }
 }

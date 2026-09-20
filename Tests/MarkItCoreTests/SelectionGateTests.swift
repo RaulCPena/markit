@@ -40,5 +40,6 @@ final class SelectionGateTests: XCTestCase {
     func test_implicitlyExcludedSystemProcess_doesNotCopy() {
         let exclusions = ExclusionList(defaults: defaults)
         XCTAssertFalse(SelectionGate.shouldCopy(enabled: true, frontmostBundleID: "com.apple.dock", exclusions: exclusions, ownBundleID: "com.raulpena.markit"))
+        XCTAssertFalse(SelectionGate.shouldCopy(enabled: true, frontmostBundleID: "com.apple.finder", exclusions: exclusions, ownBundleID: "com.raulpena.markit"))
     }
 }

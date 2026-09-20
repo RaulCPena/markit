@@ -15,10 +15,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         selectionWatcher = SelectionWatcher(exclusions: exclusions)
+        selectionWatcher.isEnabled = AppSettings().isAutoCopyEnabled
         selectionWatcher.onCopy = { [weak self] in
+            guard !PasteboardPrivacy.isConcealed(types: NSPasteboard.general.types) else { return }
             guard let text = NSPasteboard.general.string(forType: .string) else { return }
             self?.historyStore.add(text: text)
             CopyFeedback.play()
+            CopyToastController.shared.show(text: text)
+            MarkItLog.line("copied \(text.count) chars, played sound")
         }
         selectionWatcher.start()
 

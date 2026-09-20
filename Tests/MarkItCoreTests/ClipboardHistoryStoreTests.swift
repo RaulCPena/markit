@@ -46,6 +46,47 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         XCTAssertEqual(store2.items.map { $0.text }, ["persisted"])
     }
 
+    func test_clear_emptiesItems() {
+        let store = ClipboardHistoryStore(fileURL: tempURL)
+        store.add(text: "hello")
+        store.clear()
+        XCTAssertEqual(store.items.count, 0)
+    }
+
+    func test_togglePin_andDisplayed_putsPinnedFirst() {
+        let store = ClipboardHistoryStore(fileURL: tempURL)
+        store.add(text: "one")
+        store.add(text: "two")
+        store.add(text: "three")
+        let one = store.items.first(where: { $0.text == "one" })!
+        store.togglePin(id: one.id)
+        XCTAssertEqual(store.displayed(matching: "").map(\.text), ["one", "three", "two"])
+        XCTAssertEqual(store.displayed(matching: "t").map(\.text), ["three", "two"])
+    }
+
+    func test_cap_doesNotEvictPinned() {
+        let store = ClipboardHistoryStore(maxItems: 2, dedupeWindow: 0, fileURL: tempURL)
+        store.add(text: "keep")
+        store.togglePin(id: store.items[0].id)
+        store.add(text: "b")
+        store.add(text: "c")
+        XCTAssertTrue(store.items.contains(where: { $0.text == "keep" && $0.isPinned }))
+        XCTAssertEqual(store.items.count, 2)
+    }
+
+    func test_load_legacyJSON_withoutPinned_isUnpinned() {
+        let legacy = [
+            "id": UUID().uuidString,
+            "text": "legacy",
+            "timestamp": Date().timeIntervalSinceReferenceDate
+        ] as [String: Any]
+        let data = try! JSONSerialization.data(withJSONObject: [legacy])
+        try! data.write(to: tempURL)
+        let store = ClipboardHistoryStore(fileURL: tempURL)
+        XCTAssertEqual(store.items.first?.text, "legacy")
+        XCTAssertEqual(store.items.first?.isPinned, false)
+    }
+
     func test_load_corruptFile_startsEmpty() {
         try? "not valid json".data(using: .utf8)!.write(to: tempURL)
         let store = ClipboardHistoryStore(fileURL: tempURL)

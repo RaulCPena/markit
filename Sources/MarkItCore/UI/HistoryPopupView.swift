@@ -1,31 +1,76 @@
 import SwiftUI
+import Combine
 
 struct HistoryPopupView: View {
-    let items: [ClipboardItem]
-    let onSelect: (ClipboardItem) -> Void
+    @ObservedObject var model: HistoryPopupModel
+    var onPaste: (ClipboardItem) -> Void
+    var onPin: (ClipboardItem) -> Void
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if items.isEmpty {
-                Text("No clipboard history yet")
+            TextField("Search history", text: $model.query)
+                .textFieldStyle(.roundedBorder)
+                .focused($searchFocused)
+                .onSubmit { pasteFirst() }
+                .padding(8)
+
+            if model.visible.isEmpty {
+                Text(model.query.isEmpty ? "No clipboard history yet" : "No matches")
                     .foregroundStyle(.secondary)
                     .padding()
+                    .frame(maxWidth: .infinity)
             } else {
-                ForEach(items) { item in
-                    Button {
-                        onSelect(item)
-                    } label: {
-                        Text(item.text.prefix(80))
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                List(model.visible) { item in
+                    HStack(spacing: 8) {
+                        Button {
+                            onPin(item)
+                        } label: {
+                            Image(systemName: item.isPinned ? "pin.fill" : "pin")
+                                .foregroundStyle(item.isPinned ? Color.accentColor : Color.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help(item.isPinned ? "Unpin" : "Pin")
+
+                        Button {
+                            onPaste(item)
+                        } label: {
+                            Text(item.text)
+                                .lineLimit(2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.vertical, 2)
                 }
+                .listStyle(.plain)
             }
         }
-        .frame(width: 320)
-        .padding(.vertical, 6)
+        .frame(width: 380, height: 420)
+        .onAppear { searchFocused = true }
+    }
+
+    private func pasteFirst() {
+        guard let first = model.visible.first else { return }
+        onPaste(first)
+    }
+}
+
+final class HistoryPopupModel: ObservableObject {
+    @Published var query = ""
+    @Published private(set) var items: [ClipboardItem]
+    private let store: ClipboardHistoryStore
+
+    init(store: ClipboardHistoryStore) {
+        self.store = store
+        self.items = store.items
+    }
+
+    var visible: [ClipboardItem] {
+        store.displayed(matching: query)
+    }
+
+    func reload() {
+        items = store.items
     }
 }

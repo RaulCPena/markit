@@ -4,7 +4,8 @@ public enum SelectionGate {
     static let implicitlyExcludedBundleIDs: Set<String> = [
         "com.apple.dock",
         "com.apple.systemuiserver",
-        "com.apple.WindowManager"
+        "com.apple.WindowManager",
+        "com.apple.finder"
     ]
 
     public static func shouldCopy(

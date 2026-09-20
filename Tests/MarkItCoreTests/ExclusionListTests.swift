@@ -34,6 +34,12 @@ final class ExclusionListTests: XCTestCase {
         XCTAssertFalse(list.contains("com.unknown.app"))
     }
 
+    func test_seedsPasswordManagersOnFirstLaunch() {
+        let list = ExclusionList(defaults: defaults)
+        XCTAssertTrue(list.contains("com.1password.1password"))
+        XCTAssertTrue(list.contains("com.apple.keychainaccess"))
+    }
+
     func test_persistsAcrossInstances() {
         let list1 = ExclusionList(defaults: defaults)
         list1.add("com.apple.Terminal")

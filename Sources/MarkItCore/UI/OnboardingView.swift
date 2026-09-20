@@ -9,15 +9,15 @@ struct OnboardingView: View {
                 .font(.system(size: 40))
             Text("MarkIt needs Accessibility access")
                 .font(.headline)
-            Text("This lets MarkIt see when you select text anywhere, so it can copy it automatically. It never reads or stores anything except what you actively select.")
+            Text("If MarkIt is already in the list and switched on, that row is an older copy. Turn it off, click − to remove it, then + and choose this MarkIt. Then quit and reopen the app.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-            Button("Open System Settings") {
+            Button("Open Accessibility Settings") {
                 onRequestPermission()
             }
             .keyboardShortcut(.defaultAction)
         }
         .padding(24)
-        .frame(width: 340)
+        .frame(width: 380)
     }
 }

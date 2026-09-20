@@ -6,7 +6,7 @@ public final class ClipboardHistoryStore {
     private let dedupeWindow: Int
     private let fileURL: URL
 
-    public init(maxItems: Int = 50, dedupeWindow: Int = 10, fileURL: URL) {
+    public init(maxItems: Int = 200, dedupeWindow: Int = 10, fileURL: URL) {
         self.maxItems = maxItems
         self.dedupeWindow = dedupeWindow
         self.fileURL = fileURL
@@ -17,11 +17,31 @@ public final class ClipboardHistoryStore {
         guard !text.isEmpty else { return }
         let recent = items.prefix(dedupeWindow)
         if recent.contains(where: { $0.text == text }) { return }
-        items.insert(ClipboardItem(id: UUID(), text: text, timestamp: Date()), at: 0)
-        if items.count > maxItems {
-            items.removeLast(items.count - maxItems)
-        }
+        items.insert(ClipboardItem(text: text), at: 0)
+        evictIfNeeded()
         save()
+    }
+
+    public func togglePin(id: UUID) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        items[index].isPinned.toggle()
+        save()
+    }
+
+    public func clear() {
+        items = []
+        save()
+    }
+
+    public func displayed(matching query: String) -> [ClipboardItem] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered: [ClipboardItem]
+        if trimmed.isEmpty {
+            filtered = items
+        } else {
+            filtered = items.filter { $0.text.localizedCaseInsensitiveContains(trimmed) }
+        }
+        return filtered.filter(\.isPinned) + filtered.filter { !$0.isPinned }
     }
 
     public func load() {
@@ -36,6 +56,13 @@ public final class ClipboardHistoryStore {
     public func save() {
         guard let data = try? JSONEncoder().encode(items) else { return }
         try? data.write(to: fileURL, options: .atomic)
+    }
+
+    private func evictIfNeeded() {
+        while items.count > maxItems {
+            guard let index = items.lastIndex(where: { !$0.isPinned }) else { break }
+            items.remove(at: index)
+        }
     }
 }
 

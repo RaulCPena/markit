@@ -9,6 +9,7 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp .build/debug/MarkIt "$APP_DIR/Contents/MacOS/MarkIt"
 cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
+cp Resources/copy-whoosh.aiff "$APP_DIR/Contents/Resources/copy-whoosh.aiff"
 
 # Ad-hoc signatures change CDHash on every rebuild, so TCC Accessibility
 # (which keys off code identity) looks "on" in Settings for an old MarkIt
@@ -25,4 +26,14 @@ else
   echo "warning: no Apple Development identity found; Accessibility may reset on each rebuild" >&2
 fi
 
-echo "Built: $APP_DIR (run: open $APP_DIR)"
+# One stable path so System Settings is not left pointing at a .build copy
+# while we launch a newly signed binary from the repo.
+INSTALL_DIR="/Applications/MarkIt.app"
+rm -rf "$INSTALL_DIR"
+ditto "$APP_DIR" "$INSTALL_DIR"
+if [[ -n "$IDENTITY" ]]; then
+  codesign --force --sign "$IDENTITY" --identifier com.raulpena.markit --timestamp=none "$INSTALL_DIR"
+fi
+
+echo "Built: $APP_DIR"
+echo "Installed: $INSTALL_DIR (run: open $INSTALL_DIR)"

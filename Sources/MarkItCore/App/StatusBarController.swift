@@ -6,17 +6,17 @@ public final class StatusBarController: NSObject {
     private let historyPopup: HistoryPopupController
     private let hotkeyManager: HotkeyManager
     let exclusions: ExclusionList
-    private var isAutoCopyEnabled = true {
-        didSet { selectionWatcher.isEnabled = isAutoCopyEnabled }
-    }
+    private let settings: AppSettings
 
-    public init(selectionWatcher: SelectionWatcher, historyPopup: HistoryPopupController, hotkeyManager: HotkeyManager, exclusions: ExclusionList) {
+    public init(selectionWatcher: SelectionWatcher, historyPopup: HistoryPopupController, hotkeyManager: HotkeyManager, exclusions: ExclusionList, settings: AppSettings = AppSettings()) {
         self.selectionWatcher = selectionWatcher
         self.historyPopup = historyPopup
         self.hotkeyManager = hotkeyManager
         self.exclusions = exclusions
+        self.settings = settings
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
+        selectionWatcher.isEnabled = settings.isAutoCopyEnabled
         configureIcon()
         buildMenu()
         updateTrustState()
@@ -27,19 +27,41 @@ public final class StatusBarController: NSObject {
         button.image = MenuBarIcon.makeImage()
         button.toolTip = "MarkIt"
         button.imagePosition = .imageOnly
+        button.imageScaling = .scaleProportionallyDown
     }
 
     private func buildMenu() {
         let menu = NSMenu()
+        let trusted = AccessibilityPermissionManager.isTrusted
+
+        if !trusted {
+            let grantItem = NSMenuItem(title: "Turn On Accessibility…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+            grantItem.target = self
+            menu.addItem(grantItem)
+            let revealItem = NSMenuItem(title: "Show MarkIt in Finder", action: #selector(revealAppInFinder), keyEquivalent: "")
+            revealItem.target = self
+            menu.addItem(revealItem)
+            menu.addItem(.separator())
+        }
 
         let toggleItem = NSMenuItem(title: "Auto-copy on Select", action: #selector(toggleAutoCopy), keyEquivalent: "")
         toggleItem.target = self
-        toggleItem.state = isAutoCopyEnabled ? .on : .off
+        toggleItem.state = settings.isAutoCopyEnabled ? .on : .off
+        toggleItem.isEnabled = trusted
         menu.addItem(toggleItem)
+
+        let soundItem = NSMenuItem(title: "Copy Sound", action: #selector(toggleSound), keyEquivalent: "")
+        soundItem.target = self
+        soundItem.state = settings.isCopySoundEnabled ? .on : .off
+        menu.addItem(soundItem)
 
         let historyItem = NSMenuItem(title: "Clipboard History", action: #selector(showHistory), keyEquivalent: "")
         historyItem.target = self
         menu.addItem(historyItem)
+
+        let clearItem = NSMenuItem(title: "Clear History", action: #selector(clearHistory), keyEquivalent: "")
+        clearItem.target = self
+        menu.addItem(clearItem)
 
         let excludedItem = NSMenuItem(title: "Excluded Apps…", action: #selector(showExcludedApps), keyEquivalent: "")
         excludedItem.target = self
@@ -66,12 +88,22 @@ public final class StatusBarController: NSObject {
     }
 
     @objc private func toggleAutoCopy(_ sender: NSMenuItem) {
-        isAutoCopyEnabled.toggle()
-        sender.state = isAutoCopyEnabled ? .on : .off
+        settings.isAutoCopyEnabled.toggle()
+        selectionWatcher.isEnabled = settings.isAutoCopyEnabled
+        sender.state = settings.isAutoCopyEnabled ? .on : .off
+    }
+
+    @objc private func toggleSound(_ sender: NSMenuItem) {
+        settings.isCopySoundEnabled.toggle()
+        sender.state = settings.isCopySoundEnabled ? .on : .off
     }
 
     @objc private func showHistory() {
         historyPopup.toggle()
+    }
+
+    @objc private func clearHistory() {
+        historyPopup.store.clear()
     }
 
     @objc private func showExcludedApps() {
@@ -92,7 +124,16 @@ public final class StatusBarController: NSObject {
         NSApp.terminate(nil)
     }
 
+    @objc private func openAccessibilitySettings() {
+        AccessibilityPermissionManager.requestPermission()
+    }
+
+    @objc private func revealAppInFinder() {
+        NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+    }
+
     func updateTrustState() {
-        statusItem.button?.appearsDisabled = !AccessibilityPermissionManager.isTrusted
+        statusItem.button?.appearsDisabled = false
+        buildMenu()
     }
 }

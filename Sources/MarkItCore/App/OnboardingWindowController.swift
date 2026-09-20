@@ -24,7 +24,6 @@ final class OnboardingWindowController: NSObject {
         }
         let view = OnboardingView {
             AccessibilityPermissionManager.requestPermission()
-            AccessibilityPermissionManager.openAccessibilitySettings()
         }
         let hosting = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: hosting)
