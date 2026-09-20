@@ -50,10 +50,21 @@ public final class StatusBarController: NSObject {
         toggleItem.isEnabled = trusted
         menu.addItem(toggleItem)
 
-        let soundItem = NSMenuItem(title: "Copy Sound", action: #selector(toggleSound), keyEquivalent: "")
-        soundItem.target = self
-        soundItem.state = settings.isCopySoundEnabled ? .on : .off
-        menu.addItem(soundItem)
+        let soundRoot = NSMenuItem(title: "Copy Sound", action: nil, keyEquivalent: "")
+        let soundMenu = NSMenu()
+        let offItem = NSMenuItem(title: "Off", action: #selector(disableCopySound), keyEquivalent: "")
+        offItem.target = self
+        offItem.state = settings.isCopySoundEnabled ? .off : .on
+        soundMenu.addItem(offItem)
+        for name in AppSettings.systemSoundNames {
+            let item = NSMenuItem(title: name, action: #selector(chooseCopySound(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = name
+            item.state = (settings.isCopySoundEnabled && settings.copySoundName == name) ? .on : .off
+            soundMenu.addItem(item)
+        }
+        soundRoot.submenu = soundMenu
+        menu.addItem(soundRoot)
 
         let historyItem = NSMenuItem(title: "Clipboard History", action: #selector(showHistory), keyEquivalent: "")
         historyItem.target = self
@@ -93,9 +104,17 @@ public final class StatusBarController: NSObject {
         sender.state = settings.isAutoCopyEnabled ? .on : .off
     }
 
-    @objc private func toggleSound(_ sender: NSMenuItem) {
-        settings.isCopySoundEnabled.toggle()
-        sender.state = settings.isCopySoundEnabled ? .on : .off
+    @objc private func disableCopySound(_ sender: NSMenuItem) {
+        settings.isCopySoundEnabled = false
+        buildMenu()
+    }
+
+    @objc private func chooseCopySound(_ sender: NSMenuItem) {
+        guard let name = sender.representedObject as? String else { return }
+        settings.copySoundName = name
+        settings.isCopySoundEnabled = true
+        CopyFeedback.play(settings: settings)
+        buildMenu()
     }
 
     @objc private func showHistory() {

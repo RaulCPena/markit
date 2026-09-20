@@ -1,0 +1,10 @@
+# GitHub language stats: the product is Swift. Docs and packager
+# scripts should not look like a mixed-language repo.
+*.md linguist-documentation
+docs/** linguist-documentation
+scripts/** linguist-vendored
+Resources/** linguist-vendored
+AGENTS.md linguist-documentation
+CLAUDE.md linguist-documentation
+TODO.md linguist-documentation
+LICENSE linguist-documentation

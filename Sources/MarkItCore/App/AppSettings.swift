@@ -4,6 +4,9 @@ public final class AppSettings {
     private let defaults: UserDefaults
     private let autoCopyKey = "isAutoCopyEnabled"
     private let soundKey = "isCopySoundEnabled"
+    private let soundNameKey = "copySoundName"
+
+    static let systemSoundNames = ["Purr", "Pop", "Blow", "Tink", "Glass", "Funk"]
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -18,10 +21,15 @@ public final class AppSettings {
     }
 
     var isCopySoundEnabled: Bool {
-        get {
-            if defaults.object(forKey: soundKey) == nil { return true }
-            return defaults.bool(forKey: soundKey)
-        }
+        get { defaults.bool(forKey: soundKey) }
         set { defaults.set(newValue, forKey: soundKey) }
+    }
+
+    var copySoundName: String {
+        get {
+            let name = defaults.string(forKey: soundNameKey) ?? "Purr"
+            return Self.systemSoundNames.contains(name) ? name : "Purr"
+        }
+        set { defaults.set(newValue, forKey: soundNameKey) }
     }
 }

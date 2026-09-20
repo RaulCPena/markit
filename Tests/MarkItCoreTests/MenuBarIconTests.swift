@@ -11,9 +11,8 @@ final class MenuBarIconTests: XCTestCase {
 }
 
 final class CopyFeedbackTests: XCTestCase {
-    func test_usesWhooshSoundName() {
-        XCTAssertEqual(CopyFeedback.soundName, "copy-whoosh")
-        XCTAssertEqual(CopyFeedback.playbackVolume, 0.42)
+    func test_usesSystemSoundsAndSilentDefault() {
+        XCTAssertTrue(AppSettings.systemSoundNames.contains("Purr"))
         XCTAssertTrue(FileManager.default.fileExists(atPath: CopyFeedback.fallbackPath))
     }
 }

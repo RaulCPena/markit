@@ -23,11 +23,15 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertFalse(AppSettings(defaults: defaults).isAutoCopyEnabled)
     }
 
-    func test_soundDefaultsOnAndPersists() {
+    func test_soundDefaultsOffAndPersistsChoice() {
         let settings = AppSettings(defaults: defaults)
-        XCTAssertTrue(settings.isCopySoundEnabled)
-        settings.isCopySoundEnabled = false
-        XCTAssertFalse(AppSettings(defaults: defaults).isCopySoundEnabled)
+        XCTAssertFalse(settings.isCopySoundEnabled)
+        XCTAssertEqual(settings.copySoundName, "Purr")
+        settings.isCopySoundEnabled = true
+        settings.copySoundName = "Pop"
+        let reloaded = AppSettings(defaults: defaults)
+        XCTAssertTrue(reloaded.isCopySoundEnabled)
+        XCTAssertEqual(reloaded.copySoundName, "Pop")
     }
 }
 

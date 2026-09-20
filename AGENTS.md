@@ -5,8 +5,26 @@ auto-copies it to the clipboard (no ⌘C needed); right-click → Paste
 then works anywhere, unmodified. Includes a small clipboard history
 (⌘⇧V) and per-app exclusions.
 
+The **app** is Swift only (`Sources/`, `Tests/`, `Package.swift`).
+`scripts/*.sh` only wraps `swift build` / notarization. No Python,
+JS, or other runtime in the product.
+
+Public GitHub page is `README.md` (Maccy-style). Do not point
+visitors at `TODO.md` or superpowers plans.
+
 Full design: `docs/superpowers/specs/2026-09-19-markit-design.md`.
-Current status: `TODO.md`.
+Current status: `TODO.md`. Product split: `docs/free-vs-pro.md`.
+
+## Working style (this product)
+
+- Raul is product: features, tone, shipping calls.
+- Agent is Swift/AppKit: clean code, tests, build scripts.
+- Prefer small, readable types over clever abstractions.
+- User-facing copy (README, site, in-app strings): short,
+  plain, technical when needed — not “AI brochure” voice.
+  Match how a Mac utility author would write it.
+- PDF user guide is planned later; until then keep Markdown
+  tight enough that a PDF export won’t need a rewrite.
 
 ## Build & test
 

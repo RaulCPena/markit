@@ -29,7 +29,6 @@ swift build -c release
 cp .build/release/MarkIt "$APP_DIR/Contents/MacOS/MarkIt"
 cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
-cp Resources/copy-whoosh.aiff "$APP_DIR/Contents/Resources/copy-whoosh.aiff"
 
 # Single-binary bundle with no embedded frameworks, so --deep is unnecessary
 # (and deprecated by Apple).

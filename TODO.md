@@ -46,21 +46,23 @@
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-20 — airier/quieter copy whoosh; paste-over grace + skip empty-AX mouse copies.
+2026-09-20 — Working mode: Raul = PM, agent = Swift. README rewritten in a plainer voice. PDF user guide deferred.
 
 ## Now
-- Changes ready on `main` (commit). Manual paste-over and sound check still open.
+- Uncommitted: README/docs voice, sound Off + system picker, whoosh removed, CI/linguist. Waiting on Raul for next product call (commit, code cleanup pass, or a feature).
 
 ## Next
-- Confirm the whoosh has more air
-- Highlight A, highlight B, ⌘V — A should paste if done quickly
-- Manual QA; signed 1.0.0 when ready
+- Code cleanliness pass (PM-driven: what to touch first)
+- Maccy-parity Free: ⌘1–9, paste plain, delete item, pause, remappable hotkey, history toward 999
+- PDF user guide (after the Markdown settles)
+- Ship: Developer ID dmg on bigbeardapps.com/markit + GitHub. Not Mac App Store.
+- When live: launch playbook (bigbeardapps + raulcpena deploy on push)
 
 ## Blocked
 - None
 
 ## In progress
-- Select-to-copy without stealing the clip on paste-over.
+- Sound: Off by default or a native system sound; custom whoosh on hold until Raul finds one.
 
 ## Known limitations / deferred from final review
 
