@@ -7,13 +7,21 @@ enum CopyAction: Equatable {
 }
 
 enum CopyPlanner {
-    /// Prefer writing AX selected text (synthetic ⌘C is often ignored).
-    /// Empty/missing AX text falls back to ⌘C per the design spec.
-    static func action(gateAllows: Bool, axSelectedText: String?) -> CopyAction {
+    /// Mouse gestures only copy when Accessibility exposes selected text.
+    /// ⌘C-on-empty-AX copies Finder files, leftover highlights, and the
+    /// destination of a paste-over. Keyboard extend-selection can still fall back.
+    static func action(
+        gateAllows: Bool,
+        axSelectedText: String?,
+        pasteboardString: String?,
+        allowCommandCFallback: Bool
+    ) -> CopyAction {
         guard gateAllows else { return .none }
         if let axSelectedText, !axSelectedText.isEmpty {
+            if axSelectedText == pasteboardString { return .none }
             return .writeToPasteboard(axSelectedText)
         }
-        return .simulateCommandC
+        if allowCommandCFallback { return .simulateCommandC }
+        return .none
     }
 }

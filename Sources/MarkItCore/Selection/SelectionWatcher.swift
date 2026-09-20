@@ -14,8 +14,7 @@ public final class SelectionWatcher {
     private var dragDistance: CGFloat = 0
     private var mouseClickCount = 1
     private var pendingCopyWorkItem: DispatchWorkItem?
-    // 60ms: collapses rapid repeated triggers (e.g. held Shift+Arrow) into a single copy.
-    private let debounceInterval: TimeInterval = 0.06
+    private var pendingAllowsCommandCFallback = false
     private var copyGeneration = 0
 
     public init(exclusions: ExclusionList, ownBundleID: String = Bundle.main.bundleIdentifier ?? "com.raulpena.markit") {
@@ -37,7 +36,7 @@ public final class SelectionWatcher {
 
     private func installMonitorsIfNeeded() {
         guard globalMonitor == nil else { return }
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .keyUp]) { [weak self] event in
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .keyDown, .keyUp]) { [weak self] event in
             DispatchQueue.main.async {
                 self?.handleNSEvent(event)
             }
@@ -52,6 +51,7 @@ public final class SelectionWatcher {
         let mask: CGEventMask = (1 << CGEventType.leftMouseDown.rawValue)
             | (1 << CGEventType.leftMouseDragged.rawValue)
             | (1 << CGEventType.leftMouseUp.rawValue)
+            | (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
 
         let callback: CGEventTapCallBack = { _, type, event, refcon in
@@ -96,14 +96,20 @@ public final class SelectionWatcher {
         case .leftMouseDragged:
             updateDrag()
         case .leftMouseUp:
+            if event.modifierFlags.contains(.command) {
+                resetDrag()
+                return
+            }
             finishDrag(clickCount: event.clickCount)
+        case .keyDown:
+            cancelPendingCopyIfPasteChord(keyCode: Int64(event.keyCode), commandDown: event.modifierFlags.contains(.command))
         case .keyUp:
             let flags = event.modifierFlags
             let keyCode = event.keyCode
             let isArrow = (123...126).contains(keyCode)
             let isCmdA = flags.contains(.command) && keyCode == 0
             if (flags.contains(.shift) && isArrow) || isCmdA {
-                scheduleCopy()
+                scheduleCopy(allowCommandCFallback: true)
             }
         default:
             break
@@ -120,14 +126,21 @@ public final class SelectionWatcher {
             updateDrag()
         case .leftMouseUp:
             if globalMonitor != nil { return }
+            if event.flags.contains(.maskCommand) {
+                resetDrag()
+                return
+            }
             finishDrag(clickCount: Int(event.getIntegerValueField(.mouseEventClickState)))
+        case .keyDown:
+            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+            cancelPendingCopyIfPasteChord(keyCode: keyCode, commandDown: event.flags.contains(.maskCommand))
         case .keyUp:
             let flags = event.flags
             let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
             let isArrow = (123...126).contains(keyCode) // 123-126 = Left/Right/Down/Up arrows.
             let isCmdA = flags.contains(.maskCommand) && keyCode == 0 // virtual key 0 = 'A'.
             if (flags.contains(.maskShift) && isArrow) || isCmdA {
-                scheduleCopy()
+                scheduleCopy(allowCommandCFallback: true)
             }
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let eventTap = eventTap {
@@ -153,21 +166,34 @@ public final class SelectionWatcher {
         updateDrag()
         let clicks = max(mouseClickCount, max(clickCount, 1))
         if SelectionDragIntent.isTextDrag(distance: dragDistance, clickCount: clicks) {
-            scheduleCopy()
+            scheduleCopy(allowCommandCFallback: false)
         } else {
             MarkItLog.line("skip click clicks=\(clicks) dist=\(Int(dragDistance))")
         }
+        resetDrag()
+    }
+
+    private func resetDrag() {
         dragStart = nil
         dragDistance = 0
         mouseClickCount = 1
     }
 
-    private func scheduleCopy() {
-        MarkItLog.line("selection gesture")
+    private func cancelPendingCopyIfPasteChord(keyCode: Int64, commandDown: Bool) {
+        guard CopyCommitPolicy.shouldCancelPendingCopy(keyCode: keyCode, commandDown: commandDown) else { return }
+        pendingCopyWorkItem?.cancel()
+        pendingCopyWorkItem = nil
+        copyGeneration += 1
+        MarkItLog.line("cancel pending copy for ⌘ chord \(keyCode)")
+    }
+
+    private func scheduleCopy(allowCommandCFallback: Bool) {
+        pendingAllowsCommandCFallback = allowCommandCFallback
+        MarkItLog.line("selection gesture fallback=\(allowCommandCFallback)")
         pendingCopyWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in self?.performCopyIfAllowed() }
         pendingCopyWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + debounceInterval, execute: workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + CopyCommitPolicy.pasteGraceInterval, execute: workItem)
     }
 
     private func performCopyIfAllowed() {
@@ -182,7 +208,12 @@ public final class SelectionWatcher {
             exclusions: exclusions,
             ownBundleID: ownBundleID
         )
-        switch CopyPlanner.action(gateAllows: gateAllows, axSelectedText: axSelectedText()) {
+        switch CopyPlanner.action(
+            gateAllows: gateAllows,
+            axSelectedText: axSelectedText(),
+            pasteboardString: NSPasteboard.general.string(forType: .string),
+            allowCommandCFallback: pendingAllowsCommandCFallback
+        ) {
         case .none:
             MarkItLog.line("skipped copy enabled=\(isEnabled) frontmost=\(frontmostBundleID ?? "nil")")
         case .writeToPasteboard(let text):
@@ -221,7 +252,7 @@ public final class SelectionWatcher {
         }
     }
 
-    /// `nil` means AX didn't expose a string (caller falls back to ⌘C).
+    /// `nil` means AX didn't expose a string (mouse path skips; keyboard may ⌘C).
     private func axSelectedText() -> String? {
         let systemWideElement = AXUIElementCreateSystemWide()
         var focusedElement: AnyObject?

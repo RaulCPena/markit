@@ -46,20 +46,21 @@
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-19 (evening) — 33 tests passed; debug MarkIt installed at `/Applications/MarkIt.app`.
+2026-09-20 — airier/quieter copy whoosh; paste-over grace + skip empty-AX mouse copies.
 
 ## Now
-- Manual check: Finder clicks/file opens should not copy; drag-select text should.
+- Changes ready on `main` (commit). Manual paste-over and sound check still open.
 
 ## Next
-- If Accessibility flaps after this rebuild, grant `/Applications/MarkIt.app` again
+- Confirm the whoosh has more air
+- Highlight A, highlight B, ⌘V — A should paste if done quickly
 - Manual QA; signed 1.0.0 when ready
 
 ## Blocked
 - None
 
 ## In progress
-- v1.1 + false-positive click copies. Keep select-to-copy.
+- Select-to-copy without stealing the clip on paste-over.
 
 ## Known limitations / deferred from final review
 
