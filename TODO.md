@@ -48,11 +48,10 @@
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-24 — Both sessions consolidated on `main`: tip/icon/swipe (`2f7558a`) + Xcode app project (`27e0caa`). Ahead of origin by 2; not pushed.
+2026-09-24 — Consolidated work pushed to `origin/main` (`2f7558a` tip/icon/swipe, `27e0caa` Xcode app).
 
 ## Now
 - Raul: `open MarkIt.xcodeproj` → Product → Archive → Distribute App → Direct Distribution → Notarize.
-- Or push local `main` when ready (`git push` — this repo does not auto-deploy).
 
 ## Next
 - Fix menu bar icon asset (may still read as a solid block) + paste-over protect
