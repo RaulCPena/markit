@@ -21,6 +21,7 @@ enum MenuBarIcon {
         let candidates: [URL?] = [
             bundle.url(forResource: "MenuBarIcon", withExtension: "pdf"),
             bundle.url(forResource: "MenuBarIcon", withExtension: "png"),
+            bundle.url(forResource: "MenuBarIcon", withExtension: "tiff"),
         ]
         for case let url? in candidates {
             guard let image = NSImage(contentsOf: url) else { continue }

@@ -5,9 +5,9 @@ auto-copies it to the clipboard (no ⌘C needed); right-click → Paste
 then works anywhere, unmodified. Includes a small clipboard history
 (⌘⇧V) and per-app exclusions.
 
-The **app** is Swift only (`Sources/`, `Tests/`, `Package.swift`).
-`scripts/*.sh` only wraps `swift build` / notarization. No Python,
-JS, or other runtime in the product.
+The **app** is Swift only (`Sources/`, `Tests/`). `MarkIt.xcodeproj`
+is generated from `project.yml` via XcodeGen. `Package.swift` remains
+for optional `swift test`. No Python/JS runtime in the product.
 
 Public GitHub page is `README.md`. Do not point visitors at
 `TODO.md` or superpowers plans. Do not name competing apps in
@@ -29,18 +29,21 @@ Current status: `TODO.md`. Product split: `docs/free-vs-pro.md`.
 
 ## Build & test
 
-- It's a Swift Package (`Package.swift`), not an Xcode-GUI-created
-  project — Xcode opens `Package.swift` directly, or use the CLI:
-  `swift build`
-- Unit tests: `swift test` (or `swift test --filter <TestClassName>`)
-- Run the app: `./scripts/build-debug-app.sh && open /Applications/MarkIt.app`
-  (the script also leaves a copy at `.build/debug-app/MarkIt.app`; grant
-  Accessibility to **`/Applications/MarkIt.app`**, not a leftover `.build` copy)
-- Unit tests cover `ClipboardHistoryStore`, `ExclusionList`, and
-  `SelectionGate` (the pure copy-decision logic) only —
-  `SelectionWatcher`/`HotkeyManager`'s live `CGEventTap`/Accessibility
-  wiring needs a live GUI session, so it's covered by the manual
-  checklist in the design spec, not XCTest.
+- Xcode app project: `open MarkIt.xcodeproj` (or `xed .`).
+  After editing `project.yml`, run `xcodegen generate`.
+- Debug run from Xcode (⌘R), or:
+  `./scripts/build-debug-app.sh && open /Applications/MarkIt.app`
+  Grant Accessibility to **`/Applications/MarkIt.app`**.
+- Unit tests: ⌘U in Xcode, or `swift test`.
+- **Ship / notarize (preferred):** Xcode → Product → Archive →
+  Distribute App → **Direct Distribution** (Developer ID) → Notarize.
+  Needs a logged-in Apple ID in Xcode Settings → Accounts (team
+  `D9M7YX54A8`). Xcode can handle notarization without a separate
+  `notarytool` profile when you use Organizer.
+- CLI equivalent: `./scripts/release.sh 1.0.0` (still needs
+  keychain profile `MarkItNotary` for `notarytool`).
+- Unit tests cover store/gate/planner logic. Live `CGEventTap` /
+  Accessibility paths are manual checklist in the design spec.
 
 ## Architecture (see spec for full detail)
 
@@ -58,15 +61,16 @@ Current status: `TODO.md`. Product split: `docs/free-vs-pro.md`.
 - Needs Accessibility permission (System Settings → Privacy &
   Security → Accessibility) to do anything. The app checks
   `AXIsProcessTrusted()` on launch and on every activation.
-- Signing/notarization requires Raul's Apple Developer credentials
-  locally — not something an agent session can do unattended.
-- Accessibility permission is tied to code identity, not just the
-  display name in System Settings. `scripts/build-debug-app.sh` signs
-  the debug app with the local Apple Development cert when present so
-  rebuilds keep the same identity. If the onboarding sheet keeps
-  coming back after the toggle looks on, Settings is still bound to an
-  older ad-hoc copy — remove MarkIt from Accessibility, add
-  `.build/debug-app/MarkIt.app` again, then relaunch.
+- Bundle ID is `com.raulpena.markit` — do not change without
+  re-granting Accessibility.
+- Signing/notarization needs Raul's Apple Developer account in
+  Xcode. Agent sessions cannot notarize unattended.
+- Accessibility permission is tied to code identity. Prefer the
+  `/Applications/MarkIt.app` install from `build-debug-app.sh` or a
+  Release/Archive build. If onboarding keeps returning, remove MarkIt
+  from Accessibility, add the current app path, relaunch.
 - `SMAppService` (Launch at Login) is most reliable for an app
-  installed in `/Applications` — test that feature against a release
-  build, not the raw debug build sitting in the repo.
+  installed in `/Applications` — test against a release/Archive build.
+- Regenerate the Xcode project after `project.yml` changes:
+  `xcodegen generate`. Commit `MarkIt.xcodeproj` so Raul can open
+  it without running XcodeGen first.

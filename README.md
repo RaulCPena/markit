@@ -80,15 +80,22 @@ Off unless you choose one in the menu.
 
 ## Build
 
-Swift Package. Open `Package.swift` in Xcode, or:
+Xcode app project (`MarkIt.xcodeproj`, generated from `project.yml` via XcodeGen).
 
 ```sh
-swift test
-swift build
+open MarkIt.xcodeproj
 ```
 
-`scripts/build-debug-app.sh` builds a debug `.app` into `/Applications`. `scripts/release.sh` signs and notarizes (needs your Developer ID identity).
+Or: Product → Archive → Distribute App → **Direct Distribution** (Developer ID) → Notarize.
 
+Debug install:
+
+```sh
+./scripts/build-debug-app.sh
+open /Applications/MarkIt.app
+```
+
+`Package.swift` still works for `swift test` if you prefer the CLI.
 ## Why
 
 Most clipboard apps start after you’ve already hit ⌘C. MarkIt starts one step earlier: selecting text should be enough. History is there when you need an older clip; the habit is highlight → paste.

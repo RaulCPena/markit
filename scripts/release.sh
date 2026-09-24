@@ -1,57 +1,64 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Required environment variables (set these in your shell — never commit them):
-#   MARKIT_SIGNING_IDENTITY — e.g. "Developer ID Application: Raul Pena (TEAMID)"
+# Archive + Developer ID export + notarize.
+# One-time: xcrun notarytool store-credentials "MarkItNotary" \
+#   --apple-id "you@example.com" --team-id "D9M7YX54A8" --password "app-specific-password"
 #
-# One-time setup for notarization (run once, stores credentials in your keychain):
-#   xcrun notarytool store-credentials "MarkItNotary" \
-#     --apple-id "you@example.com" --team-id "YOURTEAMID" --password "app-specific-password"
-
-: "${MARKIT_SIGNING_IDENTITY:?set MARKIT_SIGNING_IDENTITY before running this script}"
+# Prefer Xcode: open MarkIt.xcodeproj → Product → Archive → Distribute App →
+# Direct Distribution (Developer ID) → Notarize. This script is the CLI equivalent.
 
 VERSION="${1:?Usage: scripts/release.sh <version, e.g. 1.0.0>}"
-BUILD_DIR="build"
-APP_DIR="$BUILD_DIR/MarkIt.app"
-ZIP_PATH="$BUILD_DIR/MarkIt-$VERSION.zip"
-DMG_STAGING_DIR="$BUILD_DIR/dmg"
-DMG_PATH="$BUILD_DIR/MarkIt-$VERSION.dmg"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
 NOTARY_PROFILE="MarkItNotary"
+ARCHIVE_PATH="build/MarkIt.xcarchive"
+EXPORT_DIR="build/export"
+APP_PATH="$EXPORT_DIR/MarkIt.app"
+ZIP_PATH="build/MarkIt-$VERSION.zip"
+DMG_STAGING_DIR="build/dmg"
+DMG_PATH="build/MarkIt-$VERSION.dmg"
 
-# A broken test suite must block cutting a release.
-swift test
+xcodegen generate
 
-rm -rf "$BUILD_DIR"
-mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
+# Prefer Xcode tests; fall back to SPM if the test host path is awkward in CI.
+xcodebuild \
+  -project MarkIt.xcodeproj \
+  -scheme MarkIt \
+  -configuration Debug \
+  -derivedDataPath .build/DerivedData \
+  test \
+  || swift test
 
-swift build -c release
+rm -rf build
+mkdir -p build
 
-cp .build/release/MarkIt "$APP_DIR/Contents/MacOS/MarkIt"
-cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
-cp Resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
-cp Resources/MenuBarIcon.png "$APP_DIR/Contents/Resources/MenuBarIcon.png"
-cp Resources/MenuBarIcon@2x.png "$APP_DIR/Contents/Resources/MenuBarIcon@2x.png"
-cp Resources/MenuBarIcon.pdf "$APP_DIR/Contents/Resources/MenuBarIcon.pdf"
+xcodebuild \
+  -project MarkIt.xcodeproj \
+  -scheme MarkIt \
+  -configuration Release \
+  -archivePath "$ARCHIVE_PATH" \
+  archive
 
-# Single-binary bundle with no embedded frameworks, so --deep is unnecessary
-# (and deprecated by Apple).
-codesign --force --options runtime \
-  --sign "$MARKIT_SIGNING_IDENTITY" \
-  "$APP_DIR"
+xcodebuild \
+  -exportArchive \
+  -archivePath "$ARCHIVE_PATH" \
+  -exportPath "$EXPORT_DIR" \
+  -exportOptionsPlist ExportOptions.plist
 
-# Notarize the .app itself and staple the ticket to it, so a copy dragged out of
-# the dmg to /Applications still passes Gatekeeper offline.
-ditto -c -k --keepParent "$APP_DIR" "$ZIP_PATH"
+test -d "$APP_PATH"
+
+ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
 
 xcrun notarytool submit "$ZIP_PATH" \
   --keychain-profile "$NOTARY_PROFILE" \
   --wait
 
-xcrun stapler staple "$APP_DIR"
+xcrun stapler staple "$APP_PATH"
 
-# Build the dmg from the now-stapled .app, with a drag-to-Applications layout.
 mkdir -p "$DMG_STAGING_DIR"
-cp -R "$APP_DIR" "$DMG_STAGING_DIR/MarkIt.app"
+cp -R "$APP_PATH" "$DMG_STAGING_DIR/MarkIt.app"
 ln -s /Applications "$DMG_STAGING_DIR/Applications"
 
 hdiutil create -volname "MarkIt" -srcfolder "$DMG_STAGING_DIR" \
@@ -64,3 +71,4 @@ xcrun notarytool submit "$DMG_PATH" \
 xcrun stapler staple "$DMG_PATH"
 
 echo "Done: $DMG_PATH"
+echo "Or use Xcode Organizer → Distribute App → Direct Distribution."

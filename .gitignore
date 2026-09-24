@@ -4,6 +4,9 @@
 DerivedData/
 build/
 .build/
+.swiftpm/
 *.xcuserstate
 xcuserdata/
 *.xcscmblueprint
+MarkIt.xcodeproj/project.xcworkspace/xcuserdata/
+MarkIt.xcodeproj/xcuserdata/
