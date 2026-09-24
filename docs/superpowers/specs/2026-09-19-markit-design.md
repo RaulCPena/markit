@@ -165,6 +165,7 @@ Developer-ID-signed direct download instead.
   addition, for excluding an app that isn't currently running.
 - ☐ Launch at Login (toggle, backed by `SMAppService.mainApp`)
 - About MarkIt
+- Tip MarkIt… (opens https://buymeacoffee.com/bigbeardapps)
 - Quit
 
 ## Error handling

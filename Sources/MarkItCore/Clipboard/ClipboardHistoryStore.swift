@@ -33,6 +33,11 @@ final class ClipboardHistoryStore {
         save()
     }
 
+    func remove(id: UUID) {
+        items.removeAll { $0.id == id }
+        save()
+    }
+
     func displayed(matching query: String) -> [ClipboardItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let filtered: [ClipboardItem]

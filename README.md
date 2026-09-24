@@ -23,7 +23,7 @@ macOS 13+. Native Swift / AppKit. Not on the Mac App Store — highlight-to-copy
 ## Features
 
 * Select text → it’s copied
-* Menu bar history with search and pins
+* Menu bar history with search, pins, and swipe-to-delete
 * Ignore apps; skip concealed pasteboard types (password managers stay out by default)
 * Copy sound off, or pick a built-in macOS sound
 * MIT
@@ -56,9 +56,9 @@ History lives in a JSON file under Application Support. No MarkIt account. No Ma
 
 ## Free and Pro
 
-Free aims to match what [Maccy](https://maccy.app) already gives away on GitHub — full local history, not a tiny free tier. Highlight-to-copy stays free.
+Free includes highlight-to-copy and a full local history — not a tiny free tier. Optional tip: [buymeacoffee.com/bigbeardapps](https://buymeacoffee.com/bigbeardapps).
 
-Pro (planned, $9.99 once) is for extras beyond that: images/files, named clip sets, preserve-clipboard paste, paste stack. Notes: [docs/free-vs-pro.md](docs/free-vs-pro.md).
+Pro (planned, $9.99 once) unlocks extras: images/files, named clip sets, preserve-clipboard paste, paste stack. Notes: [docs/free-vs-pro.md](docs/free-vs-pro.md).
 
 ## FAQ
 
@@ -91,7 +91,7 @@ swift build
 
 ## Why
 
-[Maccy](https://github.com/p0deje/Maccy) already nails clipboard history. MarkIt is the same idea plus one habit: selecting text should be enough. Free history should feel as generous as Maccy’s open-source app; the wedge is highlight-to-copy.
+Most clipboard apps start after you’ve already hit ⌘C. MarkIt starts one step earlier: selecting text should be enough. History is there when you need an older clip; the habit is highlight → paste.
 
 ## License
 

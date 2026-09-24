@@ -2,23 +2,9 @@
 
 Decision: 20 Sep 2026.
 
-Bar for Free = [Maccy’s](https://maccy.app) GitHub app (the App Store build is a tip, not a cut-down product). MarkIt Free should not be stingier on history. Highlight-to-copy stays free.
+Highlight-to-copy stays free. Free history should feel complete — search, pins, ignore apps — not a teaser cap. Pro is a one-time unlock for extras.
 
-## What Maccy Free already includes
-
-- Local history (default ~999), type-to-search
-- Pin (⌥P); pinned items stay on top
-- ⌘N for the Nth item; Enter to copy; ⌥Enter to paste; ⌥⇧Enter paste plain
-- Delete one item; clear unpinned / clear all
-- Ignore apps; ignore concealed / transient / auto-generated pasteboard types
-- Pause capture; ignore next copy
-- Remappable hotkey (Maccy defaults to ⌘⇧C; MarkIt uses ⌘⇧V)
-- Sound off by default
-- MIT; Homebrew + GitHub
-
-Maccy 2.x can keep images. MarkIt still puts images in **Pro** — that’s an iClip/Paste-style upgrade, not the text-history floor.
-
-## Free in MarkIt
+## Free
 
 | Feature | Now | Still Free |
 |---|---|---|
@@ -29,7 +15,7 @@ Maccy 2.x can keep images. MarkIt still puts images in **Pro** — that’s an i
 | Copy sound | Off or a system sound | Custom file later, still Free |
 | ⌘1–9 | No | Yes |
 | Paste as plain text | No | Yes |
-| Delete one history item | No | Yes |
+| Delete one history item | Yes (swipe in history) | — |
 | Pause / ignore next copy | No | Yes |
 | Remappable ⌘⇧V | No | Yes |
 
@@ -44,3 +30,7 @@ Direct download (Developer ID). No subscription. No Mac App Store.
 - History past 1,000 if Free keeps a cap
 
 Not Pro: iCloud, App Store binary, charging for select-to-copy or search.
+
+## Tip
+
+Optional support (not a feature unlock): https://buymeacoffee.com/bigbeardapps

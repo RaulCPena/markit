@@ -9,8 +9,9 @@ The **app** is Swift only (`Sources/`, `Tests/`, `Package.swift`).
 `scripts/*.sh` only wraps `swift build` / notarization. No Python,
 JS, or other runtime in the product.
 
-Public GitHub page is `README.md` (Maccy-style). Do not point
-visitors at `TODO.md` or superpowers plans.
+Public GitHub page is `README.md`. Do not point visitors at
+`TODO.md` or superpowers plans. Do not name competing apps in
+user-facing docs (README, site, free-vs-pro).
 
 Full design: `docs/superpowers/specs/2026-09-19-markit-design.md`.
 Current status: `TODO.md`. Product split: `docs/free-vs-pro.md`.

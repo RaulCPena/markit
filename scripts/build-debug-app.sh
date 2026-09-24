@@ -9,6 +9,9 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 cp .build/debug/MarkIt "$APP_DIR/Contents/MacOS/MarkIt"
 cp Resources/Info.plist "$APP_DIR/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
+cp Resources/MenuBarIcon.png "$APP_DIR/Contents/Resources/MenuBarIcon.png"
+cp Resources/MenuBarIcon@2x.png "$APP_DIR/Contents/Resources/MenuBarIcon@2x.png"
+cp Resources/MenuBarIcon.pdf "$APP_DIR/Contents/Resources/MenuBarIcon.pdf"
 
 # Ad-hoc signatures change CDHash on every rebuild, so TCC Accessibility
 # (which keys off code identity) looks "on" in Settings for an old MarkIt

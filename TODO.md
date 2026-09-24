@@ -39,29 +39,31 @@
     exclusion UI, and the corrected notarization order
 
 ## Built (post-review polish)
-- Menu bar uses the `highlighter` SF Symbol (template), not `doc.on.clipboard`
+- Menu bar uses custom highlighter+stroke template (`MenuBarIcon.pdf`/png), SF Symbol fallback
 - About / Quit MarkIt have explicit menu targets so they work from the status item
+- **Tip MarkIt…** opens https://buymeacoffee.com/bigbeardapps
+- History: swipe-to-delete one clip (`ClipboardHistoryStore.remove`)
 - Successful auto-copy plays **Purr** (not Tink) and a brief on-screen “Copied” toast
 - Debug app is signed with Apple Development so Accessibility TCC can persist across rebuilds
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-20 — Cleanliness pass pushed (`8718b7e`). Site profile still local on bigbeardapps `feat/markit-profile`.
+2026-09-21 — Tip menu + swipe-delete; site How it works / press / tip jar; debug app rebuilt with MenuBarIcon; 42 tests green.
 
 ## Now
-- Waiting on Raul: finish bigbeardapps `/markit` (scrub leftover hunting copy, sync/audit, commit, no push).
+- Raul: try rebuilt `/Applications/MarkIt.app` (new icon, Tip menu, swipe-delete). Store `MarkItNotary`, then `scripts/release.sh 1.0.0`.
 
 ## Next
-- Finish bigbeardapps /markit profile (MarkIt pages only); commit branch, do not push
-- Optional: raulcpena.com MarkIt project card (also no push until asked)
-- Maccy-parity Free features when PM picks one
-- PDF user guide later
+- Notarized DMG → GitHub Releases → README Install (Download only)
+- Swap How it works mock for real screenshots after first signed build
+- Commit MarkIt + bigbeardapps `feat/markit-profile` when asked (do not push site — deploy on push)
+- Free polish: ⌘1–9, paste as plain text, pause/ignore next
 
 ## Blocked
-- None
+- Notarization needs `notarytool store-credentials` for profile `MarkItNotary`.
 
 ## In progress
-- Sound: Off by default or system sound; custom whoosh on hold.
+- First Developer ID ship. Site + tip jar ready locally (unpushed).
 
 ## Known limitations / deferred from final review
 

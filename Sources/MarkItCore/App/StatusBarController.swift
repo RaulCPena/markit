@@ -93,6 +93,10 @@ final class StatusBarController: NSObject {
         aboutItem.target = self
         menu.addItem(aboutItem)
 
+        let tipItem = NSMenuItem(title: "Tip MarkIt…", action: #selector(openTipJar), keyEquivalent: "")
+        tipItem.target = self
+        menu.addItem(tipItem)
+
         let quitItem = NSMenuItem(title: "Quit MarkIt", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -139,6 +143,11 @@ final class StatusBarController: NSObject {
     @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(nil)
+    }
+
+    @objc private func openTipJar() {
+        guard let url = URL(string: TipSupport.buyMeACoffeeURL) else { return }
+        NSWorkspace.shared.open(url)
     }
 
     @objc private func quit() {

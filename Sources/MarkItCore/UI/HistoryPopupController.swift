@@ -28,6 +28,10 @@ final class HistoryPopupController: NSObject {
             onPin: { [weak self] item in
                 self?.store.togglePin(id: item.id)
                 self?.model?.reload()
+            },
+            onDelete: { [weak self] item in
+                self?.store.remove(id: item.id)
+                self?.model?.reload()
             }
         )
         let hosting = NSHostingController(rootView: view)

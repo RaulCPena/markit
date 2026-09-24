@@ -53,6 +53,22 @@ final class ClipboardHistoryStoreTests: XCTestCase {
         XCTAssertEqual(store.items.count, 0)
     }
 
+    func test_remove_deletesOneItemByID() {
+        let store = ClipboardHistoryStore(fileURL: tempURL)
+        store.add(text: "keep")
+        store.add(text: "drop")
+        let drop = store.items.first(where: { $0.text == "drop" })!
+        store.remove(id: drop.id)
+        XCTAssertEqual(store.items.map(\.text), ["keep"])
+    }
+
+    func test_remove_unknownID_isNoOp() {
+        let store = ClipboardHistoryStore(fileURL: tempURL)
+        store.add(text: "keep")
+        store.remove(id: UUID())
+        XCTAssertEqual(store.items.map(\.text), ["keep"])
+    }
+
     func test_togglePin_andDisplayed_putsPinnedFirst() {
         let store = ClipboardHistoryStore(fileURL: tempURL)
         store.add(text: "one")

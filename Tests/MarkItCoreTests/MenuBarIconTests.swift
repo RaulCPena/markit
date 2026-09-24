@@ -2,11 +2,15 @@ import XCTest
 @testable import MarkItCore
 
 final class MenuBarIconTests: XCTestCase {
-    func test_usesClipboardTemplate() {
-        XCTAssertEqual(MenuBarIcon.systemSymbolName, "doc.on.clipboard.fill")
+    func test_templateImageIsNonEmpty() {
         let image = MenuBarIcon.makeImage()
         XCTAssertTrue(image.isTemplate)
         XCTAssertGreaterThan(image.size.width, 0)
+        XCTAssertGreaterThan(image.size.height, 0)
+    }
+
+    func test_fallbackSymbolIsHighlighter() {
+        XCTAssertEqual(MenuBarIcon.fallbackSystemSymbolName, "highlighter")
     }
 }
 

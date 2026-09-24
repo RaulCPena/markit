@@ -5,6 +5,7 @@ struct HistoryPopupView: View {
     @ObservedObject var model: HistoryPopupModel
     var onPaste: (ClipboardItem) -> Void
     var onPin: (ClipboardItem) -> Void
+    var onDelete: (ClipboardItem) -> Void
     @FocusState private var searchFocused: Bool
 
     var body: some View {
@@ -21,27 +22,36 @@ struct HistoryPopupView: View {
                     .padding()
                     .frame(maxWidth: .infinity)
             } else {
-                List(model.visible) { item in
-                    HStack(spacing: 8) {
-                        Button {
-                            onPin(item)
-                        } label: {
-                            Image(systemName: item.isPinned ? "pin.fill" : "pin")
-                                .foregroundStyle(item.isPinned ? Color.accentColor : Color.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .help(item.isPinned ? "Unpin" : "Pin")
+                List {
+                    ForEach(model.visible) { item in
+                        HStack(spacing: 8) {
+                            Button {
+                                onPin(item)
+                            } label: {
+                                Image(systemName: item.isPinned ? "pin.fill" : "pin")
+                                    .foregroundStyle(item.isPinned ? Color.accentColor : Color.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .help(item.isPinned ? "Unpin" : "Pin")
 
-                        Button {
-                            onPaste(item)
-                        } label: {
-                            Text(item.text)
-                                .lineLimit(2)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Button {
+                                onPaste(item)
+                            } label: {
+                                Text(item.text)
+                                    .lineLimit(2)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.vertical, 2)
                     }
-                    .padding(.vertical, 2)
+                    .onDelete { offsets in
+                        let snapshot = model.visible
+                        for index in offsets {
+                            guard snapshot.indices.contains(index) else { continue }
+                            onDelete(snapshot[index])
+                        }
+                    }
                 }
                 .listStyle(.plain)
             }
