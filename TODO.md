@@ -48,22 +48,21 @@
 - Onboarding polls `AXIsProcessTrusted()` and dismisses when the grant actually sticks
 
 ## Last updated
-2026-09-24 — Rebuilt as Xcode app project (`MarkIt.xcodeproj` via XcodeGen). Archive with Developer ID succeeds. Prefer Organizer notarize.
+2026-09-24 — Both sessions consolidated on `main`: tip/icon/swipe (`2f7558a`) + Xcode app project (`27e0caa`). Ahead of origin by 2; not pushed.
 
 ## Now
-- Raul: `open MarkIt.xcodeproj` → Product → Archive → Distribute App → Direct Distribution → Notarize (uses Xcode Apple ID; no MarkItNotary profile required for Organizer).
-- Try `/Applications/MarkIt.app` from `./scripts/build-debug-app.sh` (⌘R in Xcode also works).
+- Raul: `open MarkIt.xcodeproj` → Product → Archive → Distribute App → Direct Distribution → Notarize.
+- Or push local `main` when ready (`git push` — this repo does not auto-deploy).
 
 ## Next
-- Fix menu bar icon asset (current PNG/PDF may read as a solid block) + paste-over protect
+- Fix menu bar icon asset (may still read as a solid block) + paste-over protect
 - GitHub Release with notarized DMG
-- Commit Xcode project when asked
 
 ## Blocked
-- Organizer notarize needs Apple ID signed into Xcode Accounts. CLI `release.sh` still needs `MarkItNotary` if you use the script path.
+- Organizer notarize needs Apple ID in Xcode Accounts. CLI `release.sh` still needs `MarkItNotary` if you use the script.
 
 ## In progress
-- Xcode-first ship path.
+- First Developer ID ship via Xcode Organizer.
 
 ## Known limitations / deferred from final review
 
